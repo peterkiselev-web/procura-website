@@ -1,0 +1,7 @@
+.env
+node_modules/
+data/enquiries.log
+.DS_Store
+.claude/
+CLAUDE.md
+data/source-notes.md

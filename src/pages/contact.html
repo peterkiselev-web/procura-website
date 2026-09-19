@@ -1,0 +1,152 @@
+<!-- {"title":"Contact | Procura","description":"Book a free consultation call about hosting a Procura power bank station, or send us a question. Our team will get back to you within one working day."} -->
+
+<section class="page-head" data-hero style="padding-bottom:48px">
+  <div class="glow"></div>
+  <div class="wrap">
+    <span class="label" data-hero-fade>Contact</span>
+    <h1 data-split>Book a free<br>consultation call</h1>
+    <p class="lede muted" data-hero-fade>Contact us for more, and our team will get back to you. Tell us a little about your venue and we'll be in touch.</p>
+  </div>
+</section>
+
+<section class="section section--tight is-bone">
+  <div class="wrap grid-2 grid-contact">
+    <form id="enquiry" class="form" action="/api/contact" method="post" novalidate data-fallback-email="">
+      <fieldset class="toggle">
+        <legend>What would you like to do?</legend>
+        <label><input type="radio" name="enquiry_type" value="call" id="type-call" checked><span>Book a free call</span></label>
+        <label><input type="radio" name="enquiry_type" value="question" id="type-question"><span>Ask a question</span></label>
+      </fieldset>
+
+      <div class="form__row">
+        <div class="field">
+          <label for="name">Your name</label>
+          <input id="name" name="name" type="text" autocomplete="name" required maxlength="100">
+          <span class="err" aria-live="polite"></span>
+        </div>
+        <div class="field">
+          <label for="venue">Venue or business name</label>
+          <input id="venue" name="venue" type="text" autocomplete="organization" required maxlength="120">
+          <span class="err" aria-live="polite"></span>
+        </div>
+      </div>
+
+      <div class="form__row">
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" autocomplete="email" required maxlength="160">
+          <span class="err" aria-live="polite"></span>
+        </div>
+        <div class="field">
+          <label for="phone">Phone <span style="text-transform:none;letter-spacing:0">(optional)</span></label>
+          <input id="phone" name="phone" type="tel" autocomplete="tel" maxlength="20">
+          <span class="err" aria-live="polite"></span>
+        </div>
+      </div>
+
+      <div class="form__row">
+        <div class="field">
+          <label for="venue_type">Type of venue</label>
+          <select id="venue_type" name="venue_type" required>
+            <option value="">Choose one</option>
+            <option>Gym or leisure centre</option>
+            <option>Hotel</option>
+            <option>Café or coffee shop</option>
+            <option>Restaurant</option>
+            <option>Bar, pub or club</option>
+            <option>Cinema or entertainment venue</option>
+            <option>Co-working space</option>
+            <option>Transport hub</option>
+            <option>Shopping centre or retail</option>
+            <option>University or student union</option>
+            <option>Stadium, events or festival</option>
+            <option>Other</option>
+          </select>
+          <span class="err" aria-live="polite"></span>
+        </div>
+        <div class="field">
+          <label for="location">Town or postcode</label>
+          <input id="location" name="location" type="text" autocomplete="postal-code" required maxlength="80">
+          <span class="err" aria-live="polite"></span>
+        </div>
+      </div>
+
+      <div class="form__row" data-call-only>
+        <div class="field">
+          <label for="footfall">Rough daily footfall</label>
+          <select id="footfall" name="footfall">
+            <option value="">Not sure</option>
+            <option>Under 100 people</option>
+            <option>100 to 500 people</option>
+            <option>500 to 2,000 people</option>
+            <option>Over 2,000 people</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="call_time">Best time for a call</label>
+          <select id="call_time" name="call_time">
+            <option value="">Any time</option>
+            <option>Weekday morning</option>
+            <option>Weekday afternoon</option>
+            <option>Weekday evening</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="message">Anything else we should know? <span style="text-transform:none;letter-spacing:0">(optional)</span></label>
+        <textarea id="message" name="message" maxlength="2000"></textarea>
+      </div>
+
+      <div class="hp" aria-hidden="true"><label for="website">Leave this empty</label><input id="website" name="website" type="text" tabindex="-1" autocomplete="off"></div>
+
+      <div>
+        <button class="btn" type="submit"><span class="btn-text">Book my free consultation</span> <span class="arrow" aria-hidden="true">&rarr;</span></button>
+      </div>
+      <small class="legal">We only use these details to reply to you. See our <a href="privacy.html">privacy notice</a>.</small>
+      <div class="form-status" role="status" aria-live="polite"></div>
+    </form>
+
+    <aside class="contact-aside">
+      <div class="card">
+        <span class="label">What the call covers</span>
+        <p>Your venue, your footfall and where people wait. We'll recommend a machine and tell you the revenue share split for your location.</p>
+      </div>
+      <div class="card">
+        <span class="label">What it costs</span>
+        <p>Nothing. The call is free and so is hosting a station.</p>
+      </div>
+      <div class="card">
+        <span class="label">What happens next</span>
+        <p>A site visit to mark the spot, a one page hosting agreement, and installation within two weeks.</p>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap grid-2">
+    <div>
+      <span class="label">Quick answers</span>
+      <h2 data-split>Before you ask</h2>
+    </div>
+    <div class="faq">
+      <details>
+        <summary>How much does one of your machines cost?<span class="plus" aria-hidden="true"></span></summary>
+        <div class="faq__a"><div>
+          <p>Nothing. Our machines are free, and they cost you £0 to host. That's the fun part.</p>
+          <p>All we need from you is a signed hosting agreement. In return your customers are more engaged and stay longer, because nobody has to leave when their phone runs out.</p>
+          <p>We also offer revenue share agreements, with splits that depend on your type of business. We share those figures after a consultation call.</p>
+        </div></div>
+      </details>
+      <details>
+        <summary>How long is the consultation call?<span class="plus" aria-hidden="true"></span></summary>
+        <div class="faq__a"><div><p>Usually a short call. We'd rather hear about your venue than give a presentation, and there's no obligation afterwards.</p></div></div>
+      </details>
+      <details>
+        <summary>More questions<span class="plus" aria-hidden="true"></span></summary>
+        <div class="faq__a"><div><p>The full list of FAQs is at the bottom of the <a href="index.html#faq">home page</a>.</p></div></div>
+      </details>
+    </div>
+  </div>
+</section>

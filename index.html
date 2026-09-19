@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en-GB" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Procura | Free power bank stations for UK venues</title>
+<meta name="description" content="Monetise your foot traffic. Procura installs, runs and insures power bank rental stations in UK venues for free, and pays you a share of every rental. Now opening in London.">
+<meta name="theme-color" content="#0a0a0a">
+<meta property="og:title" content="Procura | Free power bank stations for UK venues">
+<meta property="og:description" content="Monetise your foot traffic. Procura installs, runs and insures power bank rental stations in UK venues for free, and pays you a share of every rental. Now opening in London.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="assets/img/station-graphite.jpg">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js" crossorigin>
+<link rel="preload" href="assets/models/procura-station.glb" as="fetch" crossorigin>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}</script>
+</head>
+<body class="is-loading">
+<a class="skip" href="#main">Skip to content</a>
+<div class="loader" aria-hidden="true">
+  <div class="loader__top"><span class="loader__count">00</span><span class="loader__brand">Procura</span></div>
+  <div></div>
+  <div class="loader__bottom"><span>Power bank stations<br>for UK venues</span><span class="loader__brand">London · 2026</span></div>
+  <span class="loader__bar"></span>
+</div>
+<div class="curtain" aria-hidden="true"></div>
+
+<header class="header">
+  <a class="logo" href="index.html" aria-label="Procura home">PROCURA</a>
+  <nav class="header__nav" aria-label="Main"><a href="index.html" aria-current="page">Home</a><a href="machines.html">Machines</a><a href="how-it-works.html">How it works</a><a href="why-host.html">Why host one</a><a href="about.html">About</a><a href="contact.html">Contact</a></nav>
+  <a class="header__cta" href="contact.html">Free consultation</a>
+</header>
+
+<nav class="menu" id="menu" aria-label="Site menu">
+  <ol>
+      <li><a href="index.html" aria-current="page"><small>01</small>Home</a></li>
+      <li><a href="machines.html"><small>02</small>Machines</a></li>
+      <li><a href="how-it-works.html"><small>03</small>How it works</a></li>
+      <li><a href="why-host.html"><small>04</small>Why host one</a></li>
+      <li><a href="about.html"><small>05</small>About</a></li>
+      <li><a href="contact.html"><small>06</small>Contact</a></li>
+  </ol>
+</nav>
+
+<div class="dock">
+  <button class="dock__menu" type="button" aria-controls="menu" aria-expanded="false" aria-label="Open menu"><i><b></b><b></b></i></button>
+  <span class="dock__progress" aria-hidden="true">00%</span>
+  <a class="dock__cta" href="contact.html">Book a free call</a>
+</div>
+
+<main id="main">
+
+<!-- Pinned 3D station behind the hero and three panels -->
+<section class="stage" aria-label="The Procura station">
+  <div class="stage__canvas" data-station="scroll">
+    <div class="stage__fallback"><img src="assets/img/station-graphite.jpg" alt="The Procura counter station in matte graphite, with a screen on top and twelve power bank slots"></div>
+    <div class="glow"></div>
+  </div>
+
+  <div class="stage__panels">
+    <div class="hero" data-hero>
+      <div class="wrap">
+        <span class="label" data-hero-fade>Now opening in London</span>
+        <h1 class="display" data-split>No one leaves<br>on a flat<br>phone</h1>
+        <div class="hero__meta">
+          <p data-hero-fade>Procura puts a power bank rental station in your gym, hotel, café or bar. It costs you nothing, keeps customers inside for longer, and pays you a share of every rental.</p>
+          <div class="btn-row" style="margin-top:0" data-hero-fade>
+            <a class="btn" href="contact.html">Book a free consultation <span class="arrow" aria-hidden="true">&rarr;</span></a>
+            <a class="btn btn--ghost" href="machines.html">See the machines</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="wrap">
+        <div class="panel__copy">
+          <span class="label">01 · What it costs you</span>
+          <h2 data-split>£0 to host, for as long as you keep it</h2>
+          <p>There's nothing to buy, lease or service, and we never send you an invoice. We own the hardware and carry the risk, and you take a share of the rental income. <strong>All we need is half a square metre of floor near where people wait, and a mains socket.</strong></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel panel--right">
+      <div class="wrap">
+        <div class="panel__copy">
+          <span class="label">02 · The power bank</span>
+          <h2 data-split>Three cables in every bank</h2>
+          <p>Lightning, USB-C and micro-USB are built into each 10,000 mAh bank, so an iPhone and an Android can share one. <strong>That's two full charges of an iPhone 17, and roughly 80% in 30 minutes on a 22.5W fast charge.</strong></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="wrap">
+        <div class="panel__copy">
+          <span class="label">03 · Your brand</span>
+          <h2 data-split>Your logo on the front, not ours</h2>
+          <p>We control our own manufacturing, so colour, finish, panel graphics and logo are agreed before the unit is built. <strong>The 21-inch screen runs your promotions, classes or menu, and you can sell it to your own sponsors and keep the money.</strong></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- The problem -->
+<section class="section is-bone">
+  <div class="wrap">
+    <div class="grid-2">
+      <div>
+        <span class="label">04 · The problem</span>
+        <h2 data-split>The battery decides when they leave</h2>
+      </div>
+      <ol class="numbered" data-fade>
+        <li><span class="n">01</span><span>When a guest's phone dies in your building, the best anyone can offer is a cable behind the front desk and a socket someone has to sit next to.</span></li>
+        <li><span class="n">02</span><span>People choose their seat by where the plug is, so the tables away from the wall sit empty.</span></li>
+        <li><span class="n">03</span><span>At a gym, the code to get in and out is on the phone. When it dies, the member is stuck asking staff to let them out. It happens on the way out, which is the part of the visit people remember.</span></li>
+        <li><span class="n">04</span><span>Once the phone hits single digits, the visit is over. They pack up and go, and the table turns over for nothing.</span></li>
+      </ol>
+    </div>
+
+    <div class="stats">
+      <div class="stat" data-fade>
+        <span class="stat-num" data-count="80" data-suffix="%">80%</span>
+        <p>of gym members we asked said they would use a power bank at their gym, because they regularly run out of battery there.</p>
+      </div>
+      <div class="stat" data-fade="0.1">
+        <span class="stat-num" data-count="10000" data-suffix="+">10,000+</span>
+        <p>gym members surveyed during 2025 and 2026.</p>
+      </div>
+      <div class="stat" data-fade="0.2">
+        <span class="stat-num" data-count="30" data-suffix="+">30+</span>
+        <p>venues already running a Procura station, from gym floors to hotel lobbies.</p>
+      </div>
+    </div>
+    <p style="margin-top:48px"><a class="link-arrow" href="why-host.html">See the UK numbers <span aria-hidden="true">&rarr;</span></a></p>
+  </div>
+</section>
+
+
+<!-- Monetise your foot traffic -->
+<section class="section earn" id="earn">
+  <div class="glow"></div>
+  <div class="wrap">
+    <span class="label">05 · Monetise your foot traffic</span>
+    <h2 data-split style="max-width:15ch">Your foot traffic, turned into income</h2>
+    <p class="lede muted">The people already coming through your door are the opportunity. A Procura station keeps them there for longer and pays you for every rental.</p>
+
+    <div class="flow" data-flow aria-hidden="true">
+      <div class="flow__node"><span class="label">Your venue</span><strong>Foot traffic</strong></div>
+      <div class="flow__line"><i></i></div>
+      <div class="flow__node"><span class="label">Your guests</span><strong>Rent a bank</strong></div>
+      <div class="flow__line"><i></i></div>
+      <div class="flow__node flow__node--you"><span class="label">You</span><strong>Take a share</strong></div>
+    </div>
+
+    <div class="streams">
+      <article class="stream" data-fade>
+        <span class="stream__n">01</span>
+        <h3>Revenue share on every rental</h3>
+        <p class="muted">Each time a guest rents a bank, part of that income is yours. The split varies from location to location, depending on your type of venue and how many people pass through it. We agree it with you after a consultation call.</p>
+      </article>
+      <article class="stream" data-fade="0.1">
+        <span class="stream__n">02</span>
+        <h3>Customers who stay and spend</h3>
+        <p class="muted">A guest who isn't watching their battery doesn't leave early. They stay for another coffee or another round, and that spend goes through your till.</p>
+      </article>
+      <article class="stream" data-fade="0.2">
+        <span class="stream__n">03</span>
+        <h3>A screen you can sell</h3>
+        <p class="muted">The screen on every station is yours. Run your own offers on it, or sell the space to sponsors and suppliers and keep that money as well.</p>
+      </article>
+    </div>
+
+    <div class="estimator" data-estimator>
+      <div class="estimator__head">
+        <span class="label">Illustration</span>
+        <h3>What could a station take at your venue?</h3>
+        <p class="muted">Move the sliders to see the rental income a station could bring in each month. Your share of it is set for your location.</p>
+      </div>
+      <div class="estimator__controls">
+        <label class="range"><span>Rentals a day <b><output data-out="rentals">12</output></b></span><input type="range" min="1" max="60" value="12" data-in="rentals"></label>
+        <label class="range"><span>Average rental length <b><output data-out="hours">1</output> hr</b></span><input type="range" min="1" max="4" step="1" value="1" data-in="hours"></label>
+        <label class="range"><span>Days open a week <b><output data-out="days">7</output></b></span><input type="range" min="1" max="7" value="7" data-in="days"></label>
+      </div>
+      <div class="estimator__result">
+        <span class="label">Rental income a month</span>
+        <strong class="estimator__total" data-out="total" aria-live="polite">£1,092</strong>
+        <p class="muted">At £3 an hour. An illustration only, since real numbers depend on your footfall. Your revenue share is agreed on a free consultation call.</p>
+        <a class="btn" href="contact.html">Find out your split <span class="arrow" aria-hidden="true">&rarr;</span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- The range: pinned horizontal scroll -->
+<section class="section rail" data-rail aria-labelledby="range-h">
+  <div class="wrap rail__head">
+    <div>
+      <span class="label">06 · The range</span>
+      <h2 id="range-h" data-split>A machine for<br>every floor plan</h2>
+    </div>
+    <p class="muted" style="max-width:36ch;margin:0">A counter unit for cafés and bars, a standing unit for lobbies and receptions, and a waterproof tower for train stations and outdoor sites.</p>
+  </div>
+  <div class="rail__track">
+    <a class="machine-card" href="machines.html#counter">
+      <div class="machine-card__img"><img src="assets/img/station-graphite.jpg" alt="Procura Counter station in matte graphite" loading="lazy"></div>
+      <div class="machine-card__body">
+        <span class="label">Indoor · counter or shelf</span>
+        <h3>Procura Counter</h3>
+        <p class="muted">Twelve banks in a unit about the size of a coffee machine, with a 21-inch screen on top. Add a second unit when the room gets busy.</p>
+        <div class="machine-card__specs"><span class="chip">12 slots</span><span class="chip">Stacks to 24</span><span class="chip">21″ screen</span></div>
+      </div>
+    </a>
+    <a class="machine-card" href="machines.html#floor">
+      <div class="machine-card__img is-light"><img src="assets/img/kiosk20.webp" alt="Procura Floor 20, a slim white standing kiosk with a portrait screen and twenty slots" loading="lazy"></div>
+      <div class="machine-card__body">
+        <span class="label">Indoor · floor standing</span>
+        <h3>Procura Floor 20</h3>
+        <p class="muted">A slim standing unit for hotel lobbies, gym receptions and shopping centres. Twenty banks under a full-height advertising screen.</p>
+        <div class="machine-card__specs"><span class="chip">20 slots</span><span class="chip">Portrait screen</span><span class="chip">Free standing</span></div>
+      </div>
+    </a>
+    <a class="machine-card" href="machines.html#tower">
+      <div class="machine-card__img is-light"><img src="assets/img/kiosk40.webp" alt="Procura Tower 40, a large waterproof kiosk with a big portrait screen and forty slots" loading="lazy"></div>
+      <div class="machine-card__body">
+        <span class="label">Outdoor · waterproof</span>
+        <h3>Procura Tower 40</h3>
+        <p class="muted">Our largest machine, built for train stations and big outdoor commercial sites. Waterproof and weatherproof, with forty banks and a large screen for advertisers.</p>
+        <div class="machine-card__specs"><span class="chip">40 slots</span><span class="chip">Waterproof</span><span class="chip">Large screen</span></div>
+      </div>
+    </a>
+    <a class="machine-card" href="contact.html" style="justify-content:space-between">
+      <div class="machine-card__body" style="padding-top:40px">
+        <span class="label">Not sure which one?</span>
+        <h3 style="font-size:clamp(34px,3.4vw,52px)">We'll choose it with you on the site visit</h3>
+      </div>
+      <div class="machine-card__body"><span class="link-arrow">Book a free consultation <span aria-hidden="true">&rarr;</span></span></div>
+    </a>
+  </div>
+</section>
+
+<!-- How a guest unlocks one -->
+<section class="section" id="how">
+  <div class="wrap">
+    <span class="label">07 · How it works</span>
+    <h2 data-split style="max-width:14ch">Four steps, about a minute, no app</h2>
+    <p class="lede muted">Nothing to download, no deposit, and no reason for anyone to ask your staff for help.</p>
+
+    <div class="steps" style="margin-top:72px">
+      <div class="steps__media">
+        <div class="video-frame">
+          <video src="assets/video/station-demo.mp4" poster="assets/img/demo-poster.jpg" autoplay muted loop playsinline preload="metadata" aria-label="A guest taps a card on a Procura station and takes a power bank"></video>
+        </div>
+      </div>
+      <div>
+        <div class="step">
+          <span class="label">Step 01</span>
+          <h3>Scan the code</h3>
+          <p>The QR code is on the front of the machine. The phone camera opens it, and that's the whole setup.</p>
+        </div>
+        <div class="step">
+          <span class="label">Step 02</span>
+          <h3>Pay on one link</h3>
+          <p>A single secure payment page. Apple Pay, Google Pay, Mastercard or a debit card, in pounds or euros.</p>
+        </div>
+        <div class="step">
+          <span class="label">Step 03</span>
+          <h3>Choose the time</h3>
+          <p>One hour minimum at £3. If they keep it longer, the card is billed automatically for each extra hour.</p>
+        </div>
+        <div class="step">
+          <span class="label">Step 04</span>
+          <h3>The bank pops out</h3>
+          <p>A timer starts on their phone, with an optional reminder. They return it to any station on the network to stop the clock.</p>
+        </div>
+        <div class="tariff" data-fade>
+          <div>
+            <span class="label">Tariff</span>
+            <p>One hour minimum, billed by the hour after that. No deposit and no membership.</p>
+          </div>
+          <div class="tariff__price">£3<small>per hour · ≈ €3.50</small></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- The deal -->
+<section class="section is-bone">
+  <div class="wrap">
+    <span class="label">08 · The deal</span>
+    <div class="grid-2" style="align-items:end">
+      <p class="zero" data-scale-in aria-label="Zero pounds">£0</p>
+      <div>
+        <h2 style="font-size:clamp(34px,4.4vw,64px)" data-split>to host a station, for as long as you keep it</h2>
+        <p class="muted" style="margin-top:24px">No purchase, no lease, no service contract and no invoices. You earn a share of the rental income, with the split set for your location. We start with a two-week trial, then go through the usage numbers with you and agree your split.</p>
+      </div>
+    </div>
+    <div class="trio">
+      <div data-fade>
+        <h3>We install it</h3>
+        <p class="muted">Delivered, positioned and switched on in a morning. Nothing is drilled or wired in.</p>
+      </div>
+      <div data-fade="0.1">
+        <h3>We maintain it</h3>
+        <p class="muted">Remote monitoring, scheduled restocks and repairs. Your staff are never the support line.</p>
+      </div>
+      <div data-fade="0.2">
+        <h3>We insure it</h3>
+        <p class="muted">Theft, damage and liability sit with us, including banks that leave the building. Every station is installed with £5m public and products liability cover.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Venue types -->
+<div class="marquee" aria-label="Venues we work with: gyms, hotels, cafés, bars, restaurants, cinemas, co-working spaces, transport hubs, student unions">
+  <div class="marquee__inner" aria-hidden="true">
+    <span>Gyms</span><span>Hotels</span><span>Cafés</span><span>Bars</span><span>Restaurants</span><span>Cinemas</span><span>Co-working</span><span>Transport hubs</span><span>Student unions</span>
+  </div>
+</div>
+
+<!-- UK data teaser -->
+<section class="section">
+  <div class="wrap">
+    <span class="label">09 · The UK picture</span>
+    <h2 data-split style="max-width:13ch">Britons start to worry at 28%</h2>
+    <p class="lede muted">That's the battery level where a phone starts to feel like a problem, according to a Vodafone UK survey of 2,000 people in June 2026.</p>
+    <div class="stats">
+      <div class="stat" data-fade>
+        <span class="stat-num" data-count="74" data-suffix="%">74%</span>
+        <p>say battery worries make them wary of going too far from a plug socket.</p>
+      </div>
+      <div class="stat" data-fade="0.1">
+        <span class="stat-num" data-count="46" data-suffix="%">46%</span>
+        <p>say their phone nearly dies at least once a week.</p>
+      </div>
+      <div class="stat" data-fade="0.2">
+        <span class="stat-num" data-count="32" data-suffix="%">32%</span>
+        <p>carry a power bank of their own. The rest are looking for a socket, and each of them is a rental waiting to happen.</p>
+      </div>
+    </div>
+    <p class="source" style="margin-top:28px">Source: <a href="https://www.vodafone.co.uk/newscentre/press-release/brits-start-worrying-about-their-phone-battery-at-28-per-cent" rel="noopener" target="_blank">Vodafone UK, survey of 2,000 UK adults by Walr, June 2026</a></p>
+    <p style="margin-top:40px"><a class="link-arrow" href="why-host.html">Why venues host one <span aria-hidden="true">&rarr;</span></a></p>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section is-bone" id="faq">
+  <div class="wrap">
+    <div class="grid-2">
+      <div>
+        <span class="label">10 · FAQs</span>
+        <h2 data-split>Questions venues ask us</h2>
+        <p class="muted" style="margin-top:24px">Can't see yours? <a href="contact.html?type=question">Ask us directly</a> and our team will get back to you.</p>
+      </div>
+      <div class="faq">
+        <details>
+          <summary>How much does one of your machines cost?<span class="plus" aria-hidden="true"></span></summary>
+          <div class="faq__a"><div>
+            <p>Nothing. Our machines are free, and they cost you £0 to host. That's the fun part.</p>
+            <p>All we need from you is a signed hosting agreement. In return your customers are more engaged and stay longer, because nobody has to leave when their phone runs out.</p>
+            <p>We also offer revenue share agreements, with splits that depend on your type of business. We share those figures after a consultation call.</p>
+          </div></div>
+        </details>
+        <details>
+          <summary>How do I make money from a station?<span class="plus" aria-hidden="true"></span></summary>
+          <div class="faq__a"><div>
+            <p>Three ways. You take a share of the income from every rental at your station. Your customers stay longer and spend more, because a flat phone no longer ends their visit. And you can sell the screen on the station to sponsors or use it for your own promotions.</p>
+          </div></div>
+        </details>
+        <details>
+          <summary>How is the revenue share split decided?<span class="plus" aria-hidden="true"></span></summary>
+          <div class="faq__a"><div>
+            <p>It varies from location to location. Your type of venue, your footfall and where the station can go all play a part. We go through it with you on a consultation call and set the split for your site.</p>
+          </div></div>
+        </details>
+        <details>
+          <summary>Who pays for installation, repairs and insurance?<span class="plus" aria-hidden="true"></span></summary>
+          <div class="faq__a"><div>
+            <p>We do. We deliver, position and switch the station on in a morning, and nothing gets drilled or wired in. We monitor every station remotely and restock and repair it on a schedule.</p>
+            <p>Theft, damage and liability are ours, including banks that leave the building. Every station is installed with £5m public and products liability cover.</p>
+          </div></div>
+        </details>
+        <details>
+          <summary>What do my staff have to do?<span class="plus" aria-hidden="true"></span></summary>
+          <div class="faq__a"><div><p>Nothing. Guests scan the QR code, pay on their phone and take a bank. If anything goes wrong they deal with us, not your front desk.</p></div></div>
+        </details>
+        <details>
+          <summary>How much space does it need?<span class="plus" aria-hidden="true"></span></summary>
+          <div class="faq__a"><div><p>Half a square metre of floor and a mains socket within reach. The counter station can also sit on a shelf or bar top. We mark the exact spot with you on the site visit.</p></div></div>
+        </details>
+        <details>
+          <summary>What does it cost my guests?<span class="plus" aria-hidden="true"></span></summary>
+          <div class="faq__a"><div><p>£3 an hour, with a one hour minimum and billing by the hour after that. There's no deposit and no membership, and they can return the bank to any Procura station on the network.</p></div></div>
+        </details>
+        <details>
+          <summary>What if someone doesn't bring a bank back?<span class="plus" aria-hidden="true"></span></summary>
+          <div class="faq__a"><div><p>Their card carries on being billed by the hour, and any loss is ours to deal with. It never becomes your problem.</p></div></div>
+        </details>
+        <details>
+          <summary>Can we try it before we commit?<span class="plus" aria-hidden="true"></span></summary>
+          <div class="faq__a"><div><p>Yes. The standard trial is two weeks. Afterwards we go through the usage data with you and agree the revenue share split for your location.</p></div></div>
+        </details>
+        <details>
+          <summary>How quickly can you install?<span class="plus" aria-hidden="true"></span></summary>
+          <div class="faq__a"><div><p>The hosting agreement is one page with one signature. Once it's signed, your station goes in within two weeks.</p></div></div>
+        </details>
+        <details>
+          <summary>Do you have outdoor machines?<span class="plus" aria-hidden="true"></span></summary>
+          <div class="faq__a"><div><p>Yes. The Tower 40 is waterproof and weatherproof, and it is built for train stations and large commercial outdoor sites. We survey the site first to choose the best spot for footfall and power.</p></div></div>
+        </details>
+        <details>
+          <summary>Can the machine match our branding?<span class="plus" aria-hidden="true"></span></summary>
+          <div class="faq__a"><div><p>Yes. Your colours go across the body and panel and your logo goes on the front. The screen runs your promotions, classes or menu, and you can sell screen time to your own sponsors and keep the revenue.</p></div></div>
+        </details>
+        <details>
+          <summary>Which phones does it charge?<span class="plus" aria-hidden="true"></span></summary>
+          <div class="faq__a"><div><p>Every bank has Lightning, USB-C and micro-USB cables built in, so it charges iPhones and Android phones, old and new. Each 10,000 mAh bank holds two full charges of an iPhone 17.</p></div></div>
+        </details>
+        <details>
+          <summary>Are the power banks safe?<span class="plus" aria-hidden="true"></span></summary>
+          <div class="faq__a"><div><p>The cells are certified, with overcharge and temperature protection. We test every bank when it comes back and take any unit that drops below capacity out of the network.</p></div></div>
+        </details>
+        <details>
+          <summary>Are you already running in the UK?<span class="plus" aria-hidden="true"></span></summary>
+          <div class="faq__a"><div><p>We're opening in London now. Procura already runs stations in more than 30 venues, and our first UK hosts join as founding partners.</p></div></div>
+        </details>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section cta-band">
+  <div class="glow" style="left:-30vw;right:auto;top:0"></div>
+  <div class="wrap">
+    <span class="label">11 · Next step</span>
+    <h2 data-split>Start earning from<br>your foot traffic</h2>
+    <p class="lede muted">Contact us for more, and our team will get back to you. Or book a free consultation call now and find out the revenue share split for your venue.</p>
+    <div class="btn-row">
+      <a class="btn" href="contact.html">Book a free consultation call <span class="arrow" aria-hidden="true">&rarr;</span></a>
+      <a class="btn btn--ghost" href="contact.html?type=question">Contact us for more</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <p class="footer__big" aria-hidden="true">PROCURA</p>
+    <div class="footer__cols">
+      <div>
+        <span class="label">Procura UK</span>
+        <p class="muted">Power bank rental stations for gyms, hotels, cafés, bars and train stations. Free to host, with a share of every rental for you. Now opening in London.</p>
+      </div>
+      <div><span class="label">Pages</span><ul><li><a href="index.html">Home</a></li><li><a href="machines.html">Machines</a></li><li><a href="how-it-works.html">How it works</a></li><li><a href="why-host.html">Why host one</a></li><li><a href="about.html">About</a></li><li><a href="contact.html">Contact</a></li></ul></div>
+      <div><span class="label">Talk to us</span><ul><li><a href="contact.html">Book a free consultation</a></li><li><a href="contact.html?type=question">Ask a question</a></li><li><a href="index.html#faq">FAQs</a></li></ul></div>
+      <div><span class="label">Legal</span><ul><li><a href="privacy.html">Privacy notice</a></li></ul></div>
+    </div>
+    <div class="footer__legal">
+      <p>Procura is a trading name of JUKIE Experiences Ltd, a private limited company registered in England and Wales, company number 16203343. Registered office: 21 Royal Avenue, London, SW3 4QE.</p>
+      <p>&copy; 2026 JUKIE Experiences Ltd</p>
+    </div>
+  </div>
+</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+<script src="js/main.js"></script>
+<script type="module" src="js/station.js"></script>
+</body>
+</html>

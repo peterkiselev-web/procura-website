@@ -1,0 +1,11 @@
+{
+  "name": "procura-website",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Procura UK website: power bank rental stations for venues.",
+  "scripts": {
+    "build": "node build.js",
+    "start": "node server.js"
+  },
+  "optionalDependencies": {}
+}
