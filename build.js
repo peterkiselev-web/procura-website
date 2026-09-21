@@ -7,6 +7,9 @@ const path = require("path");
 
 const SRC = path.join(__dirname, "src", "pages");
 
+// Live address. Used for canonical links, social previews and the sitemap.
+const SITE = "https://procuracharge.com";
+
 const NAV = [
   { href: "index.html", label: "Home" },
   { href: "machines.html", label: "Machines" },
@@ -56,7 +59,12 @@ function head(meta) {
 <meta property="og:title" content="${esc(meta.title)}">
 <meta property="og:description" content="${esc(meta.description)}">
 <meta property="og:type" content="website">
-<meta property="og:image" content="assets/img/station-graphite.jpg">
+<meta property="og:image" content="${SITE}/assets/img/station-graphite.jpg">
+<meta property="og:url" content="${meta.url}">
+<meta property="og:site_name" content="Procura">
+<meta property="og:locale" content="en_GB">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="${meta.url}">${meta.noindex ? '\n<meta name="robots" content="noindex">' : ""}
 <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -142,10 +150,20 @@ for (const file of fs.readdirSync(SRC).filter((f) => f.endsWith(".html"))) {
   const m = raw.match(/^<!--\s*(\{[\s\S]*?\})\s*-->\n/);
   if (!m) throw new Error(`${file}: missing settings comment on line 1`);
   const meta = JSON.parse(m[1]);
+  meta.url = SITE + (file === "index.html" ? "/" : "/" + file);
   const body = raw.slice(m[0].length).split("@@ESTIMATOR@@").join(ESTIMATOR);
   const html = head(meta) + "\n" + chrome(file, meta) + '\n<main id="main">\n' + body + "\n</main>\n" + footer() + scripts(meta);
   if (/\u2014|\u2013/.test(html)) throw new Error(`${file}: contains an em or en dash`);
   fs.writeFileSync(path.join(__dirname, file), html);
   count++;
 }
-console.log(`Built ${count} pages.`);
+// Search engine files
+const pages = fs.readdirSync(SRC).filter((f) => f.endsWith(".html") && f !== "thanks.html");
+const today = new Date().toISOString().slice(0, 10);
+fs.writeFileSync(path.join(__dirname, "sitemap.xml"),
+  `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+  pages.map((f) => `  <url><loc>${SITE}${f === "index.html" ? "/" : "/" + f}</loc><lastmod>${today}</lastmod></url>`).join("\n") +
+  `\n</urlset>\n`);
+fs.writeFileSync(path.join(__dirname, "robots.txt"), `User-agent: *\nAllow: /\n\nSitemap: ${SITE}/sitemap.xml\n`);
+
+console.log(`Built ${count} pages, sitemap.xml and robots.txt.`);

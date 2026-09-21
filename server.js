@@ -27,6 +27,7 @@ const TYPES = {
 };
 
 const FIELDS = ["enquiry_type", "name", "venue", "email", "phone", "venue_type", "location", "footfall", "call_time", "message"];
+// "form-name" and "website" arrive from the Netlify form markup and are ignored here.
 const REQUIRED = ["name", "venue", "email", "venue_type", "location"];
 
 // Basic per-IP rate limit: 5 enquiries per 10 minutes.
@@ -170,7 +171,9 @@ function redirect(res, to) {
 }
 
 const server = http.createServer((req, res) => {
-  if (req.url.split("?")[0] === "/api/contact") {
+  const routePath = req.url.split("?")[0];
+  // Netlify catches a post to "/" in production. Handle it here too so local testing matches.
+  if (routePath === "/api/contact" || (req.method === "POST" && (routePath === "/" || routePath === "/thanks.html"))) {
     if (req.method !== "POST") { res.writeHead(405, { Allow: "POST" }); return res.end(); }
     return handleContact(req, res);
   }

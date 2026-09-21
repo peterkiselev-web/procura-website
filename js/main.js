@@ -416,8 +416,15 @@
       }
       submit.disabled = true;
       $(".btn-text", submit).textContent = "Sending...";
-      fetch(form.action, { method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify(data) })
-        .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      // Netlify catches a form-encoded post to the site itself. Our own Node server takes JSON.
+      var netlify = form.hasAttribute("data-netlify");
+      var endpoint = netlify ? (form.dataset.endpoint || "/") : "/api/contact";
+      var body = netlify ? new URLSearchParams(new FormData(form)).toString() : JSON.stringify(data);
+      var headers = netlify
+        ? { "Content-Type": "application/x-www-form-urlencoded" }
+        : { "Content-Type": "application/json", "Accept": "application/json" };
+      fetch(endpoint, { method: "POST", headers: headers, body: body })
+        .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); })
         .then(function () {
           form.reset(); syncType();
           show(data.enquiry_type === "call"

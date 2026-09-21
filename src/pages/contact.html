@@ -11,7 +11,9 @@
 
 <section class="section section--tight is-bone">
   <div class="wrap grid-2 grid-contact">
-    <form id="enquiry" class="form" action="/api/contact" method="post" novalidate data-fallback-email="">
+    <form id="enquiry" class="form" name="contact" method="post" action="/thanks.html" novalidate
+          data-netlify="true" netlify-honeypot="website" data-endpoint="/" data-fallback-email="">
+      <input type="hidden" name="form-name" value="contact">
       <fieldset class="toggle">
         <legend>What would you like to do?</legend>
         <label><input type="radio" name="enquiry_type" value="call" id="type-call" checked><span>Book a free call</span></label>
