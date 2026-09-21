@@ -16,6 +16,10 @@ const HOST = process.env.HOST || "127.0.0.1";
 const LOG_FILE = path.join(ROOT, "data", "enquiries.log");
 const MAX_BODY = 20 * 1024;
 
+// Keep this in step with netlify.toml. The sha256 pins the inline import map in the built pages,
+// so run `node build.js` and recompute it if that map ever changes.
+const CSP = "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'sha256-PJuPofc3VlYWTUNXN9BXKt1IhI2wg5qUvxVGhJE5x5k='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self'; connect-src 'self' blob: https://cdn.jsdelivr.net; worker-src 'self' blob:";
+
 // Only these paths are ever served. Everything else is a 404, including .env and this file.
 const PUBLIC_FILES = new Set(["index.html", "machines.html", "how-it-works.html", "why-host.html", "about.html", "contact.html", "privacy.html", "thanks.html"]);
 const PUBLIC_DIRS = ["css/", "js/", "assets/"];
@@ -67,6 +71,9 @@ function serveFile(req, res, full) {
       "Content-Type": type,
       "X-Content-Type-Options": "nosniff",
       "Referrer-Policy": "strict-origin-when-cross-origin",
+      "X-Frame-Options": "SAMEORIGIN",
+      "Cross-Origin-Opener-Policy": "same-origin",
+      "Content-Security-Policy": CSP,
       "Cache-Control": full.includes(path.sep + "assets" + path.sep) ? "public, max-age=86400" : "no-cache",
       "Accept-Ranges": "bytes",
     };
