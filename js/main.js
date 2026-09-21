@@ -417,7 +417,9 @@
       submit.disabled = true;
       $(".btn-text", submit).textContent = "Sending...";
       // Netlify catches a form-encoded post to the site itself. Our own Node server takes JSON.
-      var netlify = form.hasAttribute("data-netlify");
+      // Netlify strips the data-netlify attribute at deploy time, so detect the hidden
+      // form-name field it leaves behind instead.
+      var netlify = !!$('input[name="form-name"]', form);
       var endpoint = netlify ? (form.dataset.endpoint || "/") : "/api/contact";
       var body = netlify ? new URLSearchParams(new FormData(form)).toString() : JSON.stringify(data);
       var headers = netlify
