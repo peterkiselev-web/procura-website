@@ -3,6 +3,15 @@
   command = "node build.js"
   publish = "."
 
+[build.environment]
+  NODE_VERSION = "20"
+
+# The waitlist function writes venue details into ClickUp. It needs CLICKUP_TOKEN and CLICKUP_LIST_ID
+# set under Site configuration > Environment variables. See README.md.
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
 [[headers]]
   for = "/*"
   [headers.values]
@@ -14,14 +23,34 @@
     X-Permitted-Cross-Domain-Policies = "none"
     Content-Security-Policy = "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'sha256-PJuPofc3VlYWTUNXN9BXKt1IhI2wg5qUvxVGhJE5x5k='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self'; connect-src 'self' blob: https://cdn.jsdelivr.net; worker-src 'self' blob:"
 
+# The waitlist page is private to invited venues: keep it out of search and out of caches.
+[[headers]]
+  for = "/waitlist*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Cache-Control = "no-store"
+    Referrer-Policy = "no-referrer"
+
 [[headers]]
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
+[[redirects]]
+  from = "/api/waitlist"
+  to = "/.netlify/functions/waitlist"
+  status = 200
+  force = true
+
 # Source files and the local server are not part of the published site.
 [[redirects]]
   from = "/src/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/netlify/*"
   to = "/404.html"
   status = 404
   force = true

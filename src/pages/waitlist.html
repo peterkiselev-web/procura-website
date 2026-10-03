@@ -1,0 +1,154 @@
+<!-- {"title":"Join the waitlist | Procura","description":"Private waitlist page for Procura venue partners.","noindex":true,"script":"waitlist.js"} -->
+
+<section class="page-head" data-hero style="padding-bottom:48px">
+  <div class="glow"></div>
+  <div class="wrap">
+    <span class="label" data-hero-fade>Venue waitlist</span>
+    <h1 data-split>Reserve your<br>place</h1>
+    <p class="lede muted" data-hero-fade>Thanks for choosing to host a Procura station. Add your venue's details below and we'll keep you updated until your machine is installed.</p>
+  </div>
+</section>
+
+<section class="section section--tight is-bone">
+  <div class="wrap grid-2 grid-contact">
+    <div>
+      <div class="wl-panel" data-state="loading" role="status">
+        <span class="label">One moment</span>
+        <p class="muted">Checking your link.</p>
+      </div>
+
+      <div class="wl-panel" data-state="invalid" hidden>
+        <span class="label">This link isn't working</span>
+        <h2>We couldn't open your waitlist page.</h2>
+        <p class="muted">The link may be incomplete, or it may already have been used. If you've already sent us your details, we have them. Otherwise, reply to the email we sent you and we'll sort it out.</p>
+      </div>
+
+      <div class="wl-panel" data-state="error" hidden>
+        <span class="label">Something went wrong</span>
+        <h2>We couldn't check your link just now.</h2>
+        <p class="muted">Please refresh the page in a minute. If it keeps happening, email <a href="mailto:peter@procuracharge.com">peter@procuracharge.com</a>.</p>
+      </div>
+
+      <div class="wl-panel" data-state="done" hidden tabindex="-1">
+        <span class="label">You're on the list</span>
+        <h2>Thanks, <span data-first-name>there</span>.</h2>
+        <p class="muted">We have your details. We'll send you regular updates, covering what happens next, roughly how long it will take and what our team is working on, until your station is installed.</p>
+      </div>
+
+      <noscript><p class="muted">This page needs JavaScript to send your details. Please turn it on, or email <a href="mailto:peter@procuracharge.com">peter@procuracharge.com</a>.</p></noscript>
+
+      <form id="waitlist-form" class="form" data-state="form" novalidate hidden>
+        <div class="form__row">
+          <div class="field">
+            <label for="business_name">Venue or business name</label>
+            <input id="business_name" name="business_name" type="text" autocomplete="organization" required maxlength="120">
+            <span class="err" aria-live="polite"></span>
+          </div>
+          <div class="field">
+            <label for="contact_name">Contact person</label>
+            <input id="contact_name" name="contact_name" type="text" autocomplete="name" required maxlength="100">
+            <span class="err" aria-live="polite"></span>
+          </div>
+        </div>
+
+        <div class="form__row">
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" autocomplete="email" required maxlength="160">
+            <span class="err" aria-live="polite"></span>
+          </div>
+          <div class="field">
+            <label for="whatsapp">WhatsApp number</label>
+            <input id="whatsapp" name="whatsapp" type="tel" autocomplete="tel" required maxlength="24" placeholder="+44 7700 900123">
+            <span class="hint">Include the country code if it isn't a UK number.</span>
+            <span class="err" aria-live="polite"></span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="address">Venue address</label>
+          <textarea id="address" name="address" autocomplete="street-address" required maxlength="300" style="min-height:90px"></textarea>
+          <span class="err" aria-live="polite"></span>
+        </div>
+
+        <div class="form__row">
+          <div class="field">
+            <label for="venue_type">Type of venue</label>
+            <select id="venue_type" name="venue_type" required>
+              <option value="">Choose one</option>
+              <option>Gym or leisure centre</option>
+              <option>Hotel</option>
+              <option>Café or coffee shop</option>
+              <option>Restaurant</option>
+              <option>Bar, pub or club</option>
+              <option>Cinema or entertainment venue</option>
+              <option>Co-working space</option>
+              <option>Transport hub</option>
+              <option>Shopping centre or retail</option>
+              <option>University or student union</option>
+              <option>Stadium, events or festival</option>
+              <option>Other</option>
+            </select>
+            <span class="err" aria-live="polite"></span>
+          </div>
+          <div class="field">
+            <label for="footfall">Rough daily footfall <span style="text-transform:none;letter-spacing:0">(optional)</span></label>
+            <select id="footfall" name="footfall">
+              <option value="">Not sure</option>
+              <option>Under 100 people</option>
+              <option>100 to 500 people</option>
+              <option>500 to 2,000 people</option>
+              <option>Over 2,000 people</option>
+            </select>
+            <span class="err" aria-live="polite"></span>
+          </div>
+        </div>
+
+        <div class="form__row">
+          <div class="field">
+            <label for="opening_hours">Opening hours</label>
+            <input id="opening_hours" name="opening_hours" type="text" required maxlength="300" placeholder="Mon to Fri 7am to 10pm">
+            <span class="err" aria-live="polite"></span>
+          </div>
+          <div class="field">
+            <label for="channel">Where should we send updates?</label>
+            <select id="channel" name="channel">
+              <option value="both">Email and WhatsApp</option>
+              <option value="email">Email only</option>
+              <option value="whatsapp">WhatsApp only</option>
+            </select>
+            <span class="err" aria-live="polite"></span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="notes">Anything else we should know? <span style="text-transform:none;letter-spacing:0">(optional)</span></label>
+          <textarea id="notes" name="notes" maxlength="1000"></textarea>
+        </div>
+
+        <div class="hp" aria-hidden="true"><label for="website">Leave this empty</label><input id="website" name="website" type="text" tabindex="-1" autocomplete="off"></div>
+
+        <div>
+          <button class="btn" type="submit"><span class="btn-text">Join the waitlist</span> <span class="arrow" aria-hidden="true">&rarr;</span></button>
+        </div>
+        <small class="legal">We use these details to manage your place on the waitlist and to send you updates. See our <a href="privacy.html">privacy notice</a>.</small>
+        <div class="form-status" role="status" aria-live="polite"></div>
+      </form>
+    </div>
+
+    <aside class="contact-aside">
+      <div class="card">
+        <span class="label">What happens next</span>
+        <p>We order machines one at a time, in the order venues join the list. We'll keep in touch as your place moves up, then arrange your site visit and installation.</p>
+      </div>
+      <div class="card">
+        <span class="label">What it costs</span>
+        <p>Nothing. Hosting a station is free.</p>
+      </div>
+      <div class="card">
+        <span class="label">Your link</span>
+        <p>This page is only for your venue. Please don't share the link, as it stops working once you've sent your details.</p>
+      </div>
+    </aside>
+  </div>
+</section>

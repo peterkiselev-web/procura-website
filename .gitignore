@@ -1,6 +1,7 @@
 .env
 node_modules/
 data/enquiries.log
+data/waitlist.log
 .DS_Store
 .claude/
 CLAUDE.md

@@ -140,19 +140,21 @@ function scripts(meta) {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" integrity="sha384-Z3REaz79l2IaAZqJsSABtTbhjgOUYyV3p90XNnAPCSHg3EMTz1fouunq9WZRtj3d" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js" integrity="sha384-B2WBjDzEjJpYvhmi2UyEn7rektqkf5suS6sNoyyrf0EBAwBHdkiXxIlU0V5Ru2ed" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="js/main.js"></script>
-${meta.three ? '<script type="module" src="js/station.js"></script>' : ""}
+${meta.three ? '<script type="module" src="js/station.js"></script>' : ""}${meta.script ? `\n<script src="js/${meta.script}"></script>` : ""}
 </body>
 </html>
 `;
 }
 
 let count = 0;
+const hidden = new Set(); // pages marked noindex are left out of the sitemap
 for (const file of fs.readdirSync(SRC).filter((f) => f.endsWith(".html"))) {
   const raw = fs.readFileSync(path.join(SRC, file), "utf8");
   const m = raw.match(/^<!--\s*(\{[\s\S]*?\})\s*-->\n/);
   if (!m) throw new Error(`${file}: missing settings comment on line 1`);
   const meta = JSON.parse(m[1]);
   meta.url = SITE + (file === "index.html" ? "/" : "/" + file);
+  if (meta.noindex) hidden.add(file);
   const body = raw.slice(m[0].length).split("@@ESTIMATOR@@").join(ESTIMATOR);
   const html = head(meta) + "\n" + chrome(file, meta) + '\n<main id="main">\n' + body + "\n</main>\n" + footer() + scripts(meta);
   if (/\u2014|\u2013/.test(html)) throw new Error(`${file}: contains an em or en dash`);
@@ -160,7 +162,7 @@ for (const file of fs.readdirSync(SRC).filter((f) => f.endsWith(".html"))) {
   count++;
 }
 // Search engine files
-const pages = fs.readdirSync(SRC).filter((f) => f.endsWith(".html") && f !== "thanks.html");
+const pages = fs.readdirSync(SRC).filter((f) => f.endsWith(".html") && !hidden.has(f));
 const today = new Date().toISOString().slice(0, 10);
 fs.writeFileSync(path.join(__dirname, "sitemap.xml"),
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +

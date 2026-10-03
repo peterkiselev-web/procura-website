@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en-GB" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Join the waitlist | Procura</title>
+<meta name="description" content="Private waitlist page for Procura venue partners.">
+<meta name="theme-color" content="#0a0a0a">
+<meta property="og:title" content="Join the waitlist | Procura">
+<meta property="og:description" content="Private waitlist page for Procura venue partners.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://procuracharge.com/assets/img/station-graphite.jpg">
+<meta property="og:url" content="https://procuracharge.com/waitlist.html">
+<meta property="og:site_name" content="Procura">
+<meta property="og:locale" content="en_GB">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://procuracharge.com/waitlist.html">
+<meta name="robots" content="noindex">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/style.css">
+
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<div class="curtain" aria-hidden="true"></div>
+
+<header class="header">
+  <a class="logo" href="index.html" aria-label="Procura home">PROCURA</a>
+  <nav class="header__nav" aria-label="Main"><a href="index.html">Home</a><a href="machines.html">Machines</a><a href="how-it-works.html">How it works</a><a href="why-host.html">Why host one</a><a href="about.html">About</a><a href="contact.html">Contact</a></nav>
+  <a class="header__cta" href="contact.html">Free consultation</a>
+</header>
+
+<nav class="menu" id="menu" aria-label="Site menu">
+  <ol>
+      <li><a href="index.html"><small>01</small>Home</a></li>
+      <li><a href="machines.html"><small>02</small>Machines</a></li>
+      <li><a href="how-it-works.html"><small>03</small>How it works</a></li>
+      <li><a href="why-host.html"><small>04</small>Why host one</a></li>
+      <li><a href="about.html"><small>05</small>About</a></li>
+      <li><a href="contact.html"><small>06</small>Contact</a></li>
+  </ol>
+</nav>
+
+<div class="dock">
+  <button class="dock__menu" type="button" aria-controls="menu" aria-expanded="false" aria-label="Open menu"><i><b></b><b></b></i></button>
+  <span class="dock__progress" aria-hidden="true">00%</span>
+  <a class="dock__cta" href="contact.html">Book a free call</a>
+</div>
+
+<main id="main">
+
+<section class="page-head" data-hero style="padding-bottom:48px">
+  <div class="glow"></div>
+  <div class="wrap">
+    <span class="label" data-hero-fade>Venue waitlist</span>
+    <h1 data-split>Reserve your<br>place</h1>
+    <p class="lede muted" data-hero-fade>Thanks for choosing to host a Procura station. Add your venue's details below and we'll keep you updated until your machine is installed.</p>
+  </div>
+</section>
+
+<section class="section section--tight is-bone">
+  <div class="wrap grid-2 grid-contact">
+    <div>
+      <div class="wl-panel" data-state="loading" role="status">
+        <span class="label">One moment</span>
+        <p class="muted">Checking your link.</p>
+      </div>
+
+      <div class="wl-panel" data-state="invalid" hidden>
+        <span class="label">This link isn't working</span>
+        <h2>We couldn't open your waitlist page.</h2>
+        <p class="muted">The link may be incomplete, or it may already have been used. If you've already sent us your details, we have them. Otherwise, reply to the email we sent you and we'll sort it out.</p>
+      </div>
+
+      <div class="wl-panel" data-state="error" hidden>
+        <span class="label">Something went wrong</span>
+        <h2>We couldn't check your link just now.</h2>
+        <p class="muted">Please refresh the page in a minute. If it keeps happening, email <a href="mailto:peter@procuracharge.com">peter@procuracharge.com</a>.</p>
+      </div>
+
+      <div class="wl-panel" data-state="done" hidden tabindex="-1">
+        <span class="label">You're on the list</span>
+        <h2>Thanks, <span data-first-name>there</span>.</h2>
+        <p class="muted">We have your details. We'll send you regular updates, covering what happens next, roughly how long it will take and what our team is working on, until your station is installed.</p>
+      </div>
+
+      <noscript><p class="muted">This page needs JavaScript to send your details. Please turn it on, or email <a href="mailto:peter@procuracharge.com">peter@procuracharge.com</a>.</p></noscript>
+
+      <form id="waitlist-form" class="form" data-state="form" novalidate hidden>
+        <div class="form__row">
+          <div class="field">
+            <label for="business_name">Venue or business name</label>
+            <input id="business_name" name="business_name" type="text" autocomplete="organization" required maxlength="120">
+            <span class="err" aria-live="polite"></span>
+          </div>
+          <div class="field">
+            <label for="contact_name">Contact person</label>
+            <input id="contact_name" name="contact_name" type="text" autocomplete="name" required maxlength="100">
+            <span class="err" aria-live="polite"></span>
+          </div>
+        </div>
+
+        <div class="form__row">
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" autocomplete="email" required maxlength="160">
+            <span class="err" aria-live="polite"></span>
+          </div>
+          <div class="field">
+            <label for="whatsapp">WhatsApp number</label>
+            <input id="whatsapp" name="whatsapp" type="tel" autocomplete="tel" required maxlength="24" placeholder="+44 7700 900123">
+            <span class="hint">Include the country code if it isn't a UK number.</span>
+            <span class="err" aria-live="polite"></span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="address">Venue address</label>
+          <textarea id="address" name="address" autocomplete="street-address" required maxlength="300" style="min-height:90px"></textarea>
+          <span class="err" aria-live="polite"></span>
+        </div>
+
+        <div class="form__row">
+          <div class="field">
+            <label for="venue_type">Type of venue</label>
+            <select id="venue_type" name="venue_type" required>
+              <option value="">Choose one</option>
+              <option>Gym or leisure centre</option>
+              <option>Hotel</option>
+              <option>Café or coffee shop</option>
+              <option>Restaurant</option>
+              <option>Bar, pub or club</option>
+              <option>Cinema or entertainment venue</option>
+              <option>Co-working space</option>
+              <option>Transport hub</option>
+              <option>Shopping centre or retail</option>
+              <option>University or student union</option>
+              <option>Stadium, events or festival</option>
+              <option>Other</option>
+            </select>
+            <span class="err" aria-live="polite"></span>
+          </div>
+          <div class="field">
+            <label for="footfall">Rough daily footfall <span style="text-transform:none;letter-spacing:0">(optional)</span></label>
+            <select id="footfall" name="footfall">
+              <option value="">Not sure</option>
+              <option>Under 100 people</option>
+              <option>100 to 500 people</option>
+              <option>500 to 2,000 people</option>
+              <option>Over 2,000 people</option>
+            </select>
+            <span class="err" aria-live="polite"></span>
+          </div>
+        </div>
+
+        <div class="form__row">
+          <div class="field">
+            <label for="opening_hours">Opening hours</label>
+            <input id="opening_hours" name="opening_hours" type="text" required maxlength="300" placeholder="Mon to Fri 7am to 10pm">
+            <span class="err" aria-live="polite"></span>
+          </div>
+          <div class="field">
+            <label for="channel">Where should we send updates?</label>
+            <select id="channel" name="channel">
+              <option value="both">Email and WhatsApp</option>
+              <option value="email">Email only</option>
+              <option value="whatsapp">WhatsApp only</option>
+            </select>
+            <span class="err" aria-live="polite"></span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="notes">Anything else we should know? <span style="text-transform:none;letter-spacing:0">(optional)</span></label>
+          <textarea id="notes" name="notes" maxlength="1000"></textarea>
+        </div>
+
+        <div class="hp" aria-hidden="true"><label for="website">Leave this empty</label><input id="website" name="website" type="text" tabindex="-1" autocomplete="off"></div>
+
+        <div>
+          <button class="btn" type="submit"><span class="btn-text">Join the waitlist</span> <span class="arrow" aria-hidden="true">&rarr;</span></button>
+        </div>
+        <small class="legal">We use these details to manage your place on the waitlist and to send you updates. See our <a href="privacy.html">privacy notice</a>.</small>
+        <div class="form-status" role="status" aria-live="polite"></div>
+      </form>
+    </div>
+
+    <aside class="contact-aside">
+      <div class="card">
+        <span class="label">What happens next</span>
+        <p>We order machines one at a time, in the order venues join the list. We'll keep in touch as your place moves up, then arrange your site visit and installation.</p>
+      </div>
+      <div class="card">
+        <span class="label">What it costs</span>
+        <p>Nothing. Hosting a station is free.</p>
+      </div>
+      <div class="card">
+        <span class="label">Your link</span>
+        <p>This page is only for your venue. Please don't share the link, as it stops working once you've sent your details.</p>
+      </div>
+    </aside>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <p class="footer__big" aria-hidden="true">PROCURA</p>
+    <div class="footer__cols">
+      <div>
+        <span class="label">Procura UK</span>
+        <p class="muted">Power bank rental stations for gyms, hotels, cafés, bars and train stations. Free to host, with a share of every rental for you. Now opening in London.</p>
+      </div>
+      <div><span class="label">Pages</span><ul><li><a href="index.html">Home</a></li><li><a href="machines.html">Machines</a></li><li><a href="how-it-works.html">How it works</a></li><li><a href="why-host.html">Why host one</a></li><li><a href="about.html">About</a></li><li><a href="contact.html">Contact</a></li></ul></div>
+      <div><span class="label">Talk to us</span><ul><li><a href="contact.html">Book a free consultation</a></li><li><a href="contact.html?type=question">Ask a question</a></li><li><a href="index.html#faq">FAQs</a></li></ul></div>
+      <div><span class="label">Legal</span><ul><li><a href="privacy.html">Privacy notice</a></li></ul></div>
+    </div>
+    <div class="footer__legal">
+      <p>Procura is a trading name of JUKIE Experiences Ltd, a private limited company registered in England and Wales, company number 16203343. Registered office: 21 Royal Avenue, London, SW3 4QE.</p>
+      <p>&copy; 2026 JUKIE Experiences Ltd</p>
+    </div>
+  </div>
+</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" integrity="sha384-g4NTh/Iv5PPU4xPyhEWqPcwtNXOvdaDI8LLnyYfyNZOjKJeYQyjzQ9X5275eBjpt" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" integrity="sha384-Z3REaz79l2IaAZqJsSABtTbhjgOUYyV3p90XNnAPCSHg3EMTz1fouunq9WZRtj3d" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js" integrity="sha384-B2WBjDzEjJpYvhmi2UyEn7rektqkf5suS6sNoyyrf0EBAwBHdkiXxIlU0V5Ru2ed" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="js/main.js"></script>
+
+<script src="js/waitlist.js"></script>
+</body>
+</html>
