@@ -31,7 +31,7 @@ How it works:
 
 ### One-time ClickUp setup
 
-Statuses on the list: `Invited`, `Waitlisted`, `Machine ordered`, `In production`, `Ready to sign`, `Signed`, `Installed`, `Dropped`. Only `Invited` and `Waitlisted` are used by the code. Set a different name for the second with `WAITLIST_STATUS`.
+Statuses on the list: `Invited`, `Waitlisted`, `Signed`, `Machine ordered`, `Delivered`, `Installed`, `Dropped`. Only `Invited` and `Waitlisted` are used by the code. Set a different name for the second with `WAITLIST_STATUS`.
 
 Custom fields on the list. The names must match exactly (case does not matter). Any field you leave out is skipped, because the full record is always in the task description.
 
