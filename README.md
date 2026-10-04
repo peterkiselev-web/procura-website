@@ -21,37 +21,32 @@ On GitHub Pages the site is static, so the contact form has no server to post to
 
 ## Venue waitlist (private invite links)
 
-Venues that agree to move forward get a private link, `https://procuracharge.com/waitlist.html?t=<task id>&k=<code>`. The page checks the link, collects the venue's details and writes them into that venue's task in ClickUp. The code is cleared afterwards, so each link works once. The page is hidden from search engines and is not in the sitemap.
+Invited venues get a private link, `https://procuracharge.com/waitlist.html?t=<task id>&k=<code>`. The page checks the link and writes the venue's details into that venue's task in ClickUp. Each link works once. The page is hidden from search engines and left out of the sitemap. The sales process itself is documented in ClickUp, not in this repository.
 
-How it works:
+`netlify/functions/waitlist.js` checks the code, adds the submitted details to the task, moves it to **Waitlisted**, sets a due date, assigns it and posts a comment. Anything ClickUp rejects after the details are saved is noted in that comment rather than shown to the venue.
 
-1. When you invite a venue, move its existing task in the ClickUp **Venue Pipeline** list to **Invited** and put a random value in the **Invite code** field. Ask Claude "Send [venue] the waitlist link" and it does this and gives you the link, or do it by hand.
-2. The venue opens its link and submits the form. `netlify/functions/waitlist.js` checks the code against ClickUp, adds the details to the task description, fills in any matching custom fields, moves the task to **Waitlisted**, sets the due date to the first update reminder, assigns it and posts a comment.
-3. Anything ClickUp rejects after the description is saved (a missing status, a field that can't be set) is noted in that comment rather than shown to the venue.
+### What the ClickUp list needs
 
-### One-time ClickUp setup
+The list needs the statuses **Invited** and **Waitlisted** (rename the second with `WAITLIST_STATUS`), and a custom field called **Invite code** (short text). Without that field every link is refused.
 
-Statuses on the list, in order: `Prospect`, `Contacted`, `In conversation`, `Not now`, `Invited`, `Waitlisted`, `Signed`, `Machine ordered`, `Delivered`, `Installed`, `Lost`, `Do not contact`. The list covers the whole customer journey, not just the waitlist. Only `Invited` and `Waitlisted` are used by the code. Set a different name for the second with `WAITLIST_STATUS`.
+Other custom fields are optional. The names must match exactly (case does not matter), and any field that is missing is skipped, because the full record is always written to the task description as well.
 
-Custom fields on the list. The names must match exactly (case does not matter). Any field you leave out is skipped, because the full record is always in the task description.
-
-| Field name | Type | Notes |
-| --- | --- | --- |
-| Invite code | Short text | **Required.** Without it every link is refused. |
-| Business name | Short text | |
-| Contact person | Short text | |
-| Email | Email | |
-| WhatsApp | Phone | |
-| Address | Text | |
-| Venue type | Dropdown | Options should match the list in `src/pages/waitlist.html`. |
-| Opening hours | Short text | |
-| Daily footfall | Dropdown | Options: Under 100 people, 100 to 500 people, 500 to 2,000 people, Over 2,000 people. |
-| Update channel | Dropdown | Options: Email and WhatsApp, Email only, WhatsApp only. |
-| Waitlisted on | Date | |
+| Field name | Type |
+| --- | --- |
+| Business name | Short text |
+| Contact person | Short text |
+| Email | Email |
+| WhatsApp | Phone |
+| Address | Text |
+| Venue type | Dropdown |
+| Opening hours | Short text |
+| Daily footfall | Dropdown |
+| Update channel | Dropdown |
+| Waitlisted on | Date |
 
 ### Netlify settings
 
-Under Site configuration > Environment variables, set `CLICKUP_TOKEN` and `CLICKUP_LIST_ID`. Optionally set `CLICKUP_ASSIGNEE_IDS`, `UPDATE_CADENCE_DAYS` and `WAITLIST_STATUS` (see `.env.example`). The token is a ClickUp personal API token (ClickUp > Settings > Apps). It has the same access as its owner, so keep it only in Netlify, and rotate it if it is ever exposed. A token from a separate ClickUp user who only has access to this Space limits the damage if it leaks.
+Under Site configuration > Environment variables, set `CLICKUP_TOKEN` and `CLICKUP_LIST_ID`. Optionally set `CLICKUP_ASSIGNEE_IDS`, `UPDATE_CADENCE_DAYS` and `WAITLIST_STATUS` (see `.env.example`). The token is a ClickUp personal API token. It has the same access as its owner, so keep it only in Netlify, never in this repository, and rotate it if it is ever exposed.
 
 ### Trying it locally
 
