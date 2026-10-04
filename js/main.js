@@ -112,7 +112,7 @@
     var href = a.getAttribute("href");
     if (!href || href.charAt(0) === "#" || a.target === "_blank" || a.hasAttribute("download") || e.metaKey || e.ctrlKey || e.shiftKey) return;
     var url = new URL(a.href, location.href);
-    if (url.origin !== location.origin || !/\.html$|\/$/.test(url.pathname)) return;
+    if (url.origin !== location.origin || /\.[a-z0-9]+$/i.test(url.pathname) && !/\.html$/.test(url.pathname)) return;
     if (url.pathname === location.pathname && url.hash) return;
     e.preventDefault();
     closeMenu(true);

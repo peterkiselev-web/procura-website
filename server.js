@@ -22,13 +22,14 @@ const MAX_BODY = 20 * 1024;
 const CSP = "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'sha256-PJuPofc3VlYWTUNXN9BXKt1IhI2wg5qUvxVGhJE5x5k='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self'; connect-src 'self' blob: https://cdn.jsdelivr.net; worker-src 'self' blob:";
 
 // Only these paths are ever served. Everything else is a 404, including .env and this file.
-const PUBLIC_FILES = new Set(["index.html", "machines.html", "how-it-works.html", "why-host.html", "about.html", "contact.html", "privacy.html", "thanks.html", "waitlist.html"]);
+// Every page in src/pages is public, plus the search engine files. Pages are reachable at clean addresses too (/machines).
+const PUBLIC_FILES = new Set(["robots.txt", "sitemap.xml", ...fs.readdirSync(path.join(ROOT, "src", "pages")).filter((f) => f.endsWith(".html"))]);
 const PUBLIC_DIRS = ["css/", "js/", "assets/"];
 
 const TYPES = {
   ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8",
   ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp",
-  ".mp4": "video/mp4", ".glb": "model/gltf-binary", ".json": "application/json", ".ico": "image/x-icon",
+  ".mp4": "video/mp4", ".glb": "model/gltf-binary", ".json": "application/json", ".ico": "image/x-icon", ".txt": "text/plain; charset=utf-8", ".xml": "application/xml",
 };
 
 const FIELDS = ["enquiry_type", "name", "venue", "email", "phone", "venue_type", "location", "footfall", "call_time", "message"];
@@ -57,6 +58,7 @@ function loadEnv(file) {
 function resolvePublic(urlPath) {
   let p = decodeURIComponent(urlPath.split("?")[0]).replace(/^\/+/, "");
   if (p === "") p = "index.html";
+  if (!path.extname(p) && PUBLIC_FILES.has(p + ".html")) p += ".html";
   if (p.includes("\0") || p.split("/").some((seg) => seg === ".." || seg.startsWith("."))) return null;
   if (!PUBLIC_FILES.has(p) && !PUBLIC_DIRS.some((d) => p.startsWith(d))) return null;
   const full = path.join(ROOT, p);
@@ -94,6 +96,11 @@ function serveFile(req, res, full) {
 }
 
 function notFound(res) {
+  const page = path.join(ROOT, "404.html");
+  if (fs.existsSync(page)) {
+    res.writeHead(404, { "Content-Type": "text/html; charset=utf-8", "X-Content-Type-Options": "nosniff", "Content-Security-Policy": CSP });
+    return fs.createReadStream(page).pipe(res);
+  }
   res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
   res.end("Not found");
 }

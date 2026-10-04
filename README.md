@@ -15,6 +15,12 @@ Then open http://127.0.0.1:3100. The server also receives contact form enquiries
 
 Page content lives in `src/pages/`. Shared parts (header, menu, footer, legal line) are in `build.js`. Edit those, then run `node build.js` to regenerate the HTML files in the root.
 
+## Page settings and SEO checks
+
+The first line of each file in `src/pages/` holds that page's settings: `title` and `description` (required), plus `crumb`, `faq`, `article` with `published`, `noindex`, `three`, `loader` and `script` where needed. Pages are served at clean addresses such as `/faq`, and `build.js` writes the canonical links, sitemap, structured data and internal links in that form. A page with `faq` set publishes its visible `<details>` questions as FAQ structured data. Put `@@RELATED@@` and `@@CTA@@` in a page body for the shared link block and closing call to action.
+
+`npm test` rebuilds the site and checks titles, descriptions, canonicals, structured data, the sitemap, internal links, image alt text and the content security policy hash.
+
 ## Hosting note
 
 On GitHub Pages the site is static, so the contact form has no server to post to. Enquiries need either this Node server or a form service.
