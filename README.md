@@ -25,13 +25,13 @@ Venues that agree to move forward get a private link, `https://procuracharge.com
 
 How it works:
 
-1. When you invite a venue, create a task for it in the ClickUp **Venue Pipeline** list with status **Invited** and a random value in the **Invite code** field. Ask Claude to do this, or do it by hand.
+1. When you invite a venue, move its existing task in the ClickUp **Venue Pipeline** list to **Invited** and put a random value in the **Invite code** field. Ask Claude "Send [venue] the waitlist link" and it does this and gives you the link, or do it by hand.
 2. The venue opens its link and submits the form. `netlify/functions/waitlist.js` checks the code against ClickUp, adds the details to the task description, fills in any matching custom fields, moves the task to **Waitlisted**, sets the due date to the first update reminder, assigns it and posts a comment.
 3. Anything ClickUp rejects after the description is saved (a missing status, a field that can't be set) is noted in that comment rather than shown to the venue.
 
 ### One-time ClickUp setup
 
-Statuses on the list: `Invited`, `Waitlisted`, `Signed`, `Machine ordered`, `Delivered`, `Installed`, `Dropped`. Only `Invited` and `Waitlisted` are used by the code. Set a different name for the second with `WAITLIST_STATUS`.
+Statuses on the list, in order: `Prospect`, `Contacted`, `In conversation`, `Not now`, `Invited`, `Waitlisted`, `Signed`, `Machine ordered`, `Delivered`, `Installed`, `Lost`, `Do not contact`. The list covers the whole customer journey, not just the waitlist. Only `Invited` and `Waitlisted` are used by the code. Set a different name for the second with `WAITLIST_STATUS`.
 
 Custom fields on the list. The names must match exactly (case does not matter). Any field you leave out is skipped, because the full record is always in the task description.
 
