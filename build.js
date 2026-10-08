@@ -15,9 +15,23 @@ const NAV = [
   { href: "machines.html", label: "Machines" },
   { href: "how-it-works.html", label: "How it works" },
   { href: "why-host.html", label: "Why host one" },
+  { href: "partnerships.html", label: "Partner" },
   { href: "about.html", label: "About" },
   { href: "contact.html", label: "Contact" },
 ];
+
+// Ways to work with us that are not hosting a machine.
+const PARTNER_NAV = [
+  { href: "referral.html", label: "Referral programme" },
+  { href: "partnerships.html", label: "Strategic partnerships" },
+  { href: "franchise.html", label: "Franchise and territories" },
+];
+
+// The full-screen menu lists every page, including the partner routes the header groups.
+const MENU = NAV.concat([
+  { href: "referral.html", label: "Referral programme" },
+  { href: "franchise.html", label: "Franchise" },
+]);
 
 const LEGAL =
   "Procura is a trading name of JUKIE Experiences Ltd, a private limited company registered in England and Wales, " +
@@ -78,8 +92,10 @@ ${meta.three ? `<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/thr
 }
 
 function chrome(slug, meta) {
-  const links = NAV.map((n) => `<a href="${n.href}"${n.href === slug ? ' aria-current="page"' : ""}>${n.label}</a>`).join("");
-  const menuLinks = NAV.map((n, i) => `<li><a href="${n.href}"${n.href === slug ? ' aria-current="page"' : ""}><small>0${i + 1}</small>${n.label}</a></li>`).join("\n      ");
+  const partnerSlugs = PARTNER_NAV.map((n) => n.href);
+  const isCurrent = (href) => href === slug || (href === "partnerships.html" && partnerSlugs.includes(slug));
+  const links = NAV.map((n) => `<a href="${n.href}"${isCurrent(n.href) ? ' aria-current="page"' : ""}>${n.label}</a>`).join("");
+  const menuLinks = MENU.map((n, i) => `<li><a href="${n.href}"${n.href === slug ? ' aria-current="page"' : ""}><small>${String(i + 1).padStart(2, "0")}</small>${n.label}</a></li>`).join("\n      ");
   return `<body${meta.loader ? ' class="is-loading"' : ""}>
 <a class="skip" href="#main">Skip to content</a>
 ${meta.loader ? `<div class="loader" aria-hidden="true">
@@ -122,6 +138,7 @@ function footer() {
         <p class="muted">Power bank rental stations for gyms, hotels, cafés, bars and train stations. Free to host, with a share of every rental for you. Now opening in London.</p>
       </div>
       <div><span class="label">Pages</span><ul>${links}</ul></div>
+      <div><span class="label">Partner with us</span><ul>${PARTNER_NAV.map((n) => `<li><a href="${n.href}">${n.label}</a></li>`).join("")}</ul></div>
       <div><span class="label">Talk to us</span><ul><li><a href="contact.html">Book a free consultation</a></li><li><a href="contact.html?type=question">Ask a question</a></li><li><a href="index.html#faq">FAQs</a></li></ul></div>
       <div><span class="label">Legal</span><ul><li><a href="privacy.html">Privacy notice</a></li></ul></div>
     </div>

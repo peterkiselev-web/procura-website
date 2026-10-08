@@ -159,7 +159,8 @@ p { margin: 0 0 1em; max-width: 60ch; }
 .header__nav a::after { content: ""; position: absolute; left: 0; right: 0; bottom: -4px; height: 1px; background: currentColor; transform: scaleX(0); transform-origin: right; transition: transform 0.5s var(--ease); }
 .header__nav a:hover::after, .header__nav a[aria-current="page"]::after { transform: scaleX(1); transform-origin: left; }
 .header__nav a[aria-current="page"] { opacity: 1; }
-@media (min-width: 1000px) { .header__nav { display: flex; } }
+@media (min-width: 1040px) { .header__nav { display: flex; gap: 22px; font-size: 14px; } }
+@media (min-width: 1240px) { .header__nav { gap: 28px; font-size: 15px; } }
 .header__cta { font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; text-decoration: none; border: 1px solid currentColor; border-radius: 999px; padding: 10px 16px; display: none; }
 @media (min-width: 700px) { .header__cta { display: inline-block; } }
 
@@ -412,7 +413,7 @@ p { margin: 0 0 1em; max-width: 60ch; }
 .footer { background: var(--ink); color: var(--paper); padding: 96px 0 120px; border-top: 1px solid var(--line-dark); }
 .footer__big { font-size: clamp(72px, 19vw, 300px); font-weight: 700; letter-spacing: -0.06em; line-height: 0.8; margin: 0 0 64px; }
 .footer__cols { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
-@media (min-width: 900px) { .footer__cols { grid-template-columns: 2fr 1fr 1fr 1fr; } }
+@media (min-width: 900px) { .footer__cols { grid-template-columns: 1.6fr repeat(4, 1fr); } }
 .footer ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
 .footer a { text-decoration: none; color: var(--muted-dark); transition: color 0.3s; }
 .footer a:hover { color: var(--paper); }
@@ -452,6 +453,7 @@ p { margin: 0 0 1em; max-width: 60ch; }
 .flow__line i { position: absolute; inset: 0; background: var(--paper); transform-origin: left top; }
 
 .streams { display: grid; grid-template-columns: 1fr; gap: 16px; }
+.streams--auto { grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr)); }
 @media (min-width: 900px) { .streams { grid-template-columns: repeat(3, 1fr); } }
 .stream { border: 1px solid var(--line-dark); border-radius: 28px; padding: clamp(28px, 3vw, 40px); display: grid; gap: 16px; align-content: start; transition: border-color 0.5s var(--ease), background 0.5s var(--ease); }
 .stream:hover { border-color: rgba(245,244,240,0.4); background: rgba(245,244,240,0.03); }

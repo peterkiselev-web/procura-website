@@ -21,18 +21,19 @@ const MAX_BODY = 20 * 1024;
 const CSP = "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'sha256-PJuPofc3VlYWTUNXN9BXKt1IhI2wg5qUvxVGhJE5x5k='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self'; connect-src 'self' blob: https://cdn.jsdelivr.net; worker-src 'self' blob:";
 
 // Only these paths are ever served. Everything else is a 404, including .env and this file.
-const PUBLIC_FILES = new Set(["index.html", "machines.html", "how-it-works.html", "why-host.html", "about.html", "contact.html", "privacy.html", "thanks.html"]);
+const PUBLIC_FILES = new Set(["index.html", "machines.html", "how-it-works.html", "why-host.html", "about.html", "contact.html", "privacy.html", "thanks.html", "referral.html", "partnerships.html", "franchise.html", "sitemap.xml", "robots.txt"]);
 const PUBLIC_DIRS = ["css/", "js/", "assets/"];
 
 const TYPES = {
   ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8",
   ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp",
-  ".mp4": "video/mp4", ".glb": "model/gltf-binary", ".json": "application/json", ".ico": "image/x-icon",
+  ".mp4": "video/mp4", ".glb": "model/gltf-binary", ".xml": "application/xml; charset=utf-8", ".txt": "text/plain; charset=utf-8", ".json": "application/json", ".ico": "image/x-icon",
 };
 
-const FIELDS = ["enquiry_type", "name", "venue", "email", "phone", "venue_type", "location", "footfall", "call_time", "message"];
+const FIELDS = ["enquiry_type", "name", "venue", "company", "email", "phone", "venue_type", "partnership_type", "background", "sites", "location", "footfall", "call_time", "message"];
 // "form-name" and "website" arrive from the Netlify form markup and are ignored here.
-const REQUIRED = ["name", "venue", "email", "venue_type", "location"];
+// The venue form asks for more than the partner forms, so only the shared fields are required here.
+const REQUIRED = ["name", "email", "location"];
 
 // Basic per-IP rate limit: 5 enquiries per 10 minutes.
 const hits = new Map();

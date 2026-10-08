@@ -356,7 +356,12 @@
     $$("input[name=enquiry_type]", form).forEach(function (r) { r.addEventListener("change", syncType); });
     function syncType() {
       var call = $("#type-call", form);
-      var isCall = call && call.checked;
+      if (!call) {
+        // Forms without the call/question toggle keep the label written in the markup.
+        if (submit && form.dataset.submitLabel) $(".btn-text", submit).textContent = form.dataset.submitLabel;
+        return;
+      }
+      var isCall = call.checked;
       $$("[data-call-only]", form).forEach(function (el) { el.hidden = !isCall; });
       if (submit) $(".btn-text", submit).textContent = isCall ? "Book my free consultation" : "Send my question";
     }
@@ -398,7 +403,7 @@
       var to = form.dataset.fallbackEmail;
       var lines = [];
       Object.keys(data).forEach(function (k) { if (k !== "website" && data[k]) lines.push(k.replace(/_/g, " ") + ": " + data[k]); });
-      var subject = (data.enquiry_type === "call" ? "Consultation call request: " : "Question: ") + (data.venue || data.name);
+      var subject = (form.dataset.subject || (data.enquiry_type === "call" ? "Consultation call request" : "Question")) + ": " + (data.venue || data.company || data.name);
       location.href = "mailto:" + to + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(lines.join("\n"));
     }
 
@@ -429,9 +434,12 @@
         .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); })
         .then(function () {
           form.reset(); syncType();
-          show(data.enquiry_type === "call"
-            ? "Thanks, " + data.name.split(" ")[0] + ". We've got your request and our team will get back to you to book your call."
-            : "Thanks, " + data.name.split(" ")[0] + ". We've got your question and our team will get back to you.");
+          var firstName = (data.name || "").split(" ")[0];
+          var done = form.dataset.success
+            || (data.enquiry_type === "call"
+              ? "We've got your request and our team will get back to you to book your call."
+              : "We've got your question and our team will get back to you.");
+          show("Thanks, " + firstName + ". " + done);
         })
         .catch(function () {
           if (canMail) { show("We couldn't reach our server, so we're opening your email app with your details filled in. Just press send."); mailtoFallback(data); }
