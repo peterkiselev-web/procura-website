@@ -149,3 +149,72 @@ test("the content security policy still matches the inline import map", () => {
 test("the 3D model is no longer preloaded", () => {
   for (const p of pages) assert.ok(!/rel="preload"[^>]*\.glb/.test(p.html), `${p.file}: preloads the 5.6 MB model`);
 });
+
+// ---- link previews: what a text message, WhatsApp, Slack or social post shows when a link is shared
+
+// Width and height of a JPEG, read from its header.
+function jpegSize(file) {
+  const b = fs.readFileSync(file);
+  assert.equal(b[0], 0xff); assert.equal(b[1], 0xd8, `${file} is not a JPEG`);
+  let i = 2;
+  while (i < b.length) {
+    assert.equal(b[i], 0xff);
+    const marker = b[i + 1], len = b.readUInt16BE(i + 2);
+    if (marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker)) return { height: b.readUInt16BE(i + 5), width: b.readUInt16BE(i + 7) };
+    i += 2 + len;
+  }
+  throw new Error("no size found");
+}
+
+test("every public page carries the full set of link preview tags", () => {
+  const need = ["og:title", "og:description", "og:type", "og:image", "og:image:secure_url", "og:image:type", "og:image:width", "og:image:height", "og:image:alt", "og:url", "og:site_name", "og:locale"];
+  for (const p of indexable) {
+    for (const prop of need) assert.match(p.html, new RegExp(`<meta property="${prop}" content="[^"]+"`), `${p.file}: missing ${prop}`);
+    for (const name of ["twitter:card", "twitter:title", "twitter:description", "twitter:image", "twitter:image:alt"]) {
+      assert.match(p.html, new RegExp(`<meta name="${name}" content="[^"]+"`), `${p.file}: missing ${name}`);
+    }
+    assert.equal(attr(p.html, /<meta name="twitter:card" content="([^"]+)"/), "summary_large_image");
+    assert.match(p.html, /<link rel="apple-touch-icon" href="\/assets\/img\/apple-touch-icon\.png">/, `${p.file}: no touch icon`);
+  }
+});
+
+test("the preview image is a real landscape picture of the right size, at an absolute address", () => {
+  for (const p of indexable) {
+    const src = attr(p.html, /<meta property="og:image" content="([^"]+)"/);
+    assert.equal(src, `${SITE}/assets/img/share-preview.jpg`, `${p.file}: og:image`);
+    assert.equal(attr(p.html, /<meta name="twitter:image" content="([^"]+)"/), src, `${p.file}: twitter:image should match`);
+  }
+  const file = path.join(ROOT, "assets", "img", "share-preview.jpg");
+  const { width, height } = jpegSize(file);
+  assert.deepEqual([width, height], [1200, 630], "the image should be 1200 x 630");
+  assert.ok(fs.statSync(file).size < 300 * 1024, "the image should be under 300 KB so every app will load it");
+  const home = pages.find((p) => p.file === "index.html").html;
+  assert.equal(attr(home, /<meta property="og:image:width" content="(\d+)"/), "1200");
+  assert.equal(attr(home, /<meta property="og:image:height" content="(\d+)"/), "630");
+  const icon = fs.readFileSync(path.join(ROOT, "assets", "img", "apple-touch-icon.png"));
+  assert.equal(icon.readUInt32BE(16), 180); assert.equal(icon.readUInt32BE(20), 180);
+});
+
+test("the link preview wording chosen on 8 October is kept exactly", () => {
+  const home = pages.find((p) => p.file === "index.html").html;
+  assert.equal(attr(home, /<meta property="og:title" content="([^"]+)"/), "Procura | Free, fully bespoke power bank stations for UK venues");
+  assert.equal(attr(home, /<meta property="og:description" content="([^"]+)"/), "Free power bank stations for UK venues. We develop and build our own machines, so every station is made bespoke to your brand, from the body colour to the screen. We install it, run it, insure it, and pay you a share of every rental.");
+  const machines = pages.find((p) => p.file === "machines.html").html;
+  assert.match(attr(machines, /<meta property="og:description" content="([^"]+)"/), /^The Procura range: a 12-slot counter station.*built bespoke to your brand before it ships\. Free to host\.$/);
+});
+
+test("the preview tags are in the page source itself, not added by JavaScript", () => {
+  for (const f of ["main.js", "station.js", "waitlist.js"]) {
+    const js = fs.readFileSync(path.join(ROOT, "js", f), "utf8");
+    assert.ok(!/og:image|property=["']og:|createElement\(["']meta["']\)/.test(js), `js/${f} must not touch the preview tags`);
+  }
+});
+
+test("the footer on every public page links to the FAQs, the venue pages and the partner pages", () => {
+  for (const p of indexable) {
+    const footer = p.html.slice(p.html.indexOf('<footer class="footer">'));
+    for (const href of ["/faq", "/power-bank-rental-stations-for-hotels", "/are-power-bank-rental-stations-worth-it", "/referral", "/partnerships", "/franchise", "/privacy", "/contact"]) {
+      assert.ok(footer.includes(`href="${href}"`), `${p.file}: the footer has no link to ${href}`);
+    }
+  }
+});

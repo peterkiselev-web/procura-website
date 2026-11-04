@@ -4,6 +4,7 @@
 //
 // Settings a page can use in its first-line comment:
 //   title, description   required. Keep titles under 65 characters and descriptions under 165.
+//   ogTitle, ogDescription  wording for link previews, if it should differ from the search listing
 //   crumb                short name for the breadcrumb (defaults to the nav label or the title)
 //   faq                  true to publish the page's <details> questions as FAQ structured data
 //   article, published   true plus a YYYY-MM-DD date for guides (adds Article structured data)
@@ -27,10 +28,24 @@ const NAV = [
   { file: "machines.html", label: "Machines" },
   { file: "how-it-works.html", label: "How it works" },
   { file: "why-host.html", label: "Why host one" },
-  { file: "faq.html", label: "FAQs" },
+  { file: "partnerships.html", label: "Partner" },
   { file: "about.html", label: "About" },
   { file: "contact.html", label: "Contact" },
 ];
+
+// Ways to work with us that are not hosting a machine.
+const PARTNER_NAV = [
+  { file: "referral.html", label: "Referral programme" },
+  { file: "partnerships.html", label: "Strategic partnerships" },
+  { file: "franchise.html", label: "Franchise and territories" },
+];
+
+// The full-screen menu lists every page, including the FAQs and the partner routes the header groups.
+const MENU = NAV.concat([
+  { file: "faq.html", label: "FAQs" },
+  { file: "referral.html", label: "Referral programme" },
+  { file: "franchise.html", label: "Franchise" },
+]);
 
 const VENUE_PAGES = [
   { file: "power-bank-rental-stations-for-bars-and-pubs.html", label: "Bars and pubs" },
@@ -48,8 +63,12 @@ const LEGAL =
   "Procura is a trading name of JUKIE Experiences Ltd, a private limited company registered in England and Wales, " +
   "company number 16203343. Registered office: 21 Royal Avenue, London, SW3 4QE.";
 
-const OG_IMAGE = SITE + "/assets/img/station-graphite.jpg";
-const OG_IMAGE_ALT = "The Procura counter station in matte graphite, with a screen on top and twelve power bank slots";
+// The picture shown when a link is shared in a text, chat or social post. Landscape, 1200 x 630, under 300 KB:
+// that is the shape and size every messaging app and social network is built for. test/seo.test.js checks it.
+const OG_IMAGE = SITE + "/assets/img/share-preview.jpg";
+const OG_IMAGE_WIDTH = 1200;
+const OG_IMAGE_HEIGHT = 630;
+const OG_IMAGE_ALT = "Procura. Free power bank stations for UK venues, with nothing to pay and a share of every rental. A Procura counter station is shown on the right.";
 
 
 // Rental income estimator, dropped into any page body that contains @@ESTIMATOR@@.
@@ -178,6 +197,8 @@ function structuredData(file, meta, body) {
 
 function head(meta, file, body) {
   const t = esc(meta.title), d = esc(meta.description);
+  // The text shown in link previews can differ from the search listing, so each can be tuned on its own.
+  const ot = esc(meta.ogTitle || meta.title), od = esc(meta.ogDescription || meta.description);
   return `<!doctype html>
 <html lang="en-GB" class="no-js">
 <head>
@@ -187,19 +208,25 @@ function head(meta, file, body) {
 <meta name="description" content="${d}">
 <meta name="robots" content="${meta.noindex ? "noindex" : "index, follow, max-image-preview:large"}">
 <meta name="theme-color" content="#0a0a0a">
-<meta property="og:title" content="${t}">
-<meta property="og:description" content="${d}">
+<meta property="og:title" content="${ot}">
+<meta property="og:description" content="${od}">
 <meta property="og:type" content="${meta.article ? "article" : "website"}">
 <meta property="og:image" content="${OG_IMAGE}">
+<meta property="og:image:secure_url" content="${OG_IMAGE}">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="${OG_IMAGE_WIDTH}">
+<meta property="og:image:height" content="${OG_IMAGE_HEIGHT}">
 <meta property="og:image:alt" content="${esc(OG_IMAGE_ALT)}">
 <meta property="og:url" content="${meta.url}">
 <meta property="og:site_name" content="Procura">
 <meta property="og:locale" content="en_GB">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="${t}">
-<meta name="twitter:description" content="${d}">
+<meta name="twitter:title" content="${ot}">
+<meta name="twitter:description" content="${od}">
 <meta name="twitter:image" content="${OG_IMAGE}">
+<meta name="twitter:image:alt" content="${esc(OG_IMAGE_ALT)}">
 ${meta.noindex ? "" : `<link rel="canonical" href="${meta.url}">\n`}<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400;500&display=swap">
@@ -210,8 +237,10 @@ ${meta.three ? `<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/thr
 }
 
 function chrome(slug, meta) {
-  const links = NAV.map((n) => `<a href="${urlFor(n.file)}"${n.file === slug ? ' aria-current="page"' : ""}>${n.label}</a>`).join("");
-  const menuLinks = NAV.map((n, i) => `<li><a href="${urlFor(n.file)}"${n.file === slug ? ' aria-current="page"' : ""}><small>0${i + 1}</small>${n.label}</a></li>`).join("\n      ");
+  const partnerSlugs = PARTNER_NAV.map((n) => n.file);
+  const isCurrent = (file) => file === slug || (file === "partnerships.html" && partnerSlugs.includes(slug));
+  const links = NAV.map((n) => `<a href="${urlFor(n.file)}"${isCurrent(n.file) ? ' aria-current="page"' : ""}>${n.label}</a>`).join("");
+  const menuLinks = MENU.map((n, i) => `<li><a href="${urlFor(n.file)}"${n.file === slug ? ' aria-current="page"' : ""}><small>${String(i + 1).padStart(2, "0")}</small>${n.label}</a></li>`).join("\n      ");
   return `<body${meta.loader ? ' class="is-loading"' : ""}>
 <a class="skip" href="#main">Skip to content</a>
 ${meta.loader ? `<div class="loader" aria-hidden="true">
@@ -257,7 +286,8 @@ function footer() {
       </div>
       <div><span class="label">Pages</span><ul>${links}</ul></div>
       <div><span class="label">Hosting for</span><ul>${venues}</ul></div>
-      <div><span class="label">Guides</span><ul>${guides}<li><a href="contact.html?type=question">Ask a question</a></li></ul></div>
+      <div><span class="label">Guides and help</span><ul><li><a href="${urlFor("faq.html")}">FAQs</a></li>${guides}<li><a href="contact.html?type=question">Ask a question</a></li></ul></div>
+      <div><span class="label">Partner with us</span><ul>${PARTNER_NAV.map((n) => `<li><a href="${urlFor(n.file)}">${n.label}</a></li>`).join("")}</ul></div>
       <div><span class="label">Legal</span><ul><li><a href="privacy.html">Privacy notice</a></li></ul></div>
     </div>
     <div class="footer__legal">

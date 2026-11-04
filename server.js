@@ -29,12 +29,13 @@ const PUBLIC_DIRS = ["css/", "js/", "assets/"];
 const TYPES = {
   ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8",
   ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp",
-  ".mp4": "video/mp4", ".glb": "model/gltf-binary", ".json": "application/json", ".ico": "image/x-icon", ".txt": "text/plain; charset=utf-8", ".xml": "application/xml",
+  ".mp4": "video/mp4", ".glb": "model/gltf-binary", ".xml": "application/xml; charset=utf-8", ".txt": "text/plain; charset=utf-8", ".json": "application/json", ".ico": "image/x-icon",
 };
 
-const FIELDS = ["enquiry_type", "name", "venue", "email", "phone", "venue_type", "location", "footfall", "call_time", "message"];
+const FIELDS = ["enquiry_type", "name", "venue", "company", "email", "phone", "venue_type", "partnership_type", "background", "sites", "location", "footfall", "call_time", "message"];
 // "form-name" and "website" arrive from the Netlify form markup and are ignored here.
-const REQUIRED = ["name", "venue", "email", "venue_type", "location"];
+// The venue form asks for more than the partner forms, so only the shared fields are required here.
+const REQUIRED = ["name", "email", "location"];
 
 // Basic per-IP rate limit: 5 enquiries per 10 minutes.
 const hits = new Map();
