@@ -7,6 +7,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const { URLSearchParams } = require("url");
+const waitlistFn = require("./netlify/functions/waitlist.js");
 
 const ROOT = __dirname;
 loadEnv(path.join(ROOT, ".env"));
@@ -21,7 +22,8 @@ const MAX_BODY = 20 * 1024;
 const CSP = "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'sha256-PJuPofc3VlYWTUNXN9BXKt1IhI2wg5qUvxVGhJE5x5k='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self'; connect-src 'self' blob: https://cdn.jsdelivr.net; worker-src 'self' blob:";
 
 // Only these paths are ever served. Everything else is a 404, including .env and this file.
-const PUBLIC_FILES = new Set(["index.html", "machines.html", "how-it-works.html", "why-host.html", "about.html", "contact.html", "privacy.html", "thanks.html", "referral.html", "partnerships.html", "franchise.html", "sitemap.xml", "robots.txt"]);
+// Every page in src/pages is public, plus the search engine files. Pages are reachable at clean addresses too (/machines).
+const PUBLIC_FILES = new Set(["robots.txt", "sitemap.xml", ...fs.readdirSync(path.join(ROOT, "src", "pages")).filter((f) => f.endsWith(".html"))]);
 const PUBLIC_DIRS = ["css/", "js/", "assets/"];
 
 const TYPES = {
@@ -57,6 +59,7 @@ function loadEnv(file) {
 function resolvePublic(urlPath) {
   let p = decodeURIComponent(urlPath.split("?")[0]).replace(/^\/+/, "");
   if (p === "") p = "index.html";
+  if (!path.extname(p) && PUBLIC_FILES.has(p + ".html")) p += ".html";
   if (p.includes("\0") || p.split("/").some((seg) => seg === ".." || seg.startsWith("."))) return null;
   if (!PUBLIC_FILES.has(p) && !PUBLIC_DIRS.some((d) => p.startsWith(d))) return null;
   const full = path.join(ROOT, p);
@@ -94,6 +97,11 @@ function serveFile(req, res, full) {
 }
 
 function notFound(res) {
+  const page = path.join(ROOT, "404.html");
+  if (fs.existsSync(page)) {
+    res.writeHead(404, { "Content-Type": "text/html; charset=utf-8", "X-Content-Type-Options": "nosniff", "Content-Security-Policy": CSP });
+    return fs.createReadStream(page).pipe(res);
+  }
   res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
   res.end("Not found");
 }
@@ -173,6 +181,58 @@ function handleContact(req, res) {
   });
 }
 
+// Waitlist: the same handler Netlify runs, so local testing matches production. With CLICKUP_TOKEN and
+// CLICKUP_LIST_ID set it talks to ClickUp for real. Without them it runs against a fake venue so the page can be
+// tried offline: open /waitlist.html?t=demo&k=demo-invite-code-0000 and submissions go to data/waitlist.log.
+const WAITLIST_LOG = path.join(ROOT, "data", "waitlist.log");
+let waitlistHandler = null;
+function waitlist() {
+  if (waitlistHandler) return waitlistHandler;
+  const settings = waitlistFn.settingsFrom(process.env);
+  if (process.env.CLICKUP_TOKEN && process.env.CLICKUP_LIST_ID) {
+    const store = waitlistFn.clickupStore({ token: process.env.CLICKUP_TOKEN, listId: process.env.CLICKUP_LIST_ID, settings });
+    waitlistHandler = waitlistFn.createHandler({ store, settings, listId: process.env.CLICKUP_LIST_ID });
+  } else {
+    console.log("Waitlist: no ClickUp settings found, using the offline demo venue (t=demo, k=demo-invite-code-0000).");
+    let used = false;
+    const store = {
+      async getTask(id) {
+        if (id !== "demo" || used) return null;
+        return { id: "demo", name: "Demo Venue", listId: "demo", description: "", fields: [{ id: "f1", name: "Invite code", type: "short_text", value: "demo-invite-code-0000", options: [] }] };
+      },
+      async saveSubmission(task, data, { now }) {
+        fs.mkdirSync(path.dirname(WAITLIST_LOG), { recursive: true });
+        fs.appendFileSync(WAITLIST_LOG, JSON.stringify({ received: now.toISOString(), data }) + "\n");
+        used = true;
+        return { issues: [] };
+      },
+    };
+    waitlistHandler = waitlistFn.createHandler({ store, settings, listId: "demo" });
+  }
+  return waitlistHandler;
+}
+
+function handleWaitlist(req, res) {
+  const url = new URL(req.url, "http://localhost");
+  const ip = req.socket.remoteAddress || "unknown";
+  const finish = (body) => waitlist()({ method: req.method, query: Object.fromEntries(url.searchParams), body, ip })
+    .then((out) => sendJson(res, out.status, out.json));
+  if (req.method === "GET") return finish(null);
+  if (req.method !== "POST") { res.writeHead(405, { Allow: "GET, POST" }); return res.end(); }
+  let raw = "", size = 0, aborted = false;
+  req.on("data", (chunk) => {
+    size += chunk.length;
+    if (size > waitlistFn.MAX_BODY) { aborted = true; sendJson(res, 413, { ok: false, error: "too_large" }); req.destroy(); return; }
+    raw += chunk;
+  });
+  req.on("end", () => {
+    if (aborted) return;
+    let body;
+    try { body = JSON.parse(raw || "{}"); } catch (e) { return sendJson(res, 400, { ok: false, error: "bad_request" }); }
+    finish(body);
+  });
+}
+
 function redirect(res, to) {
   res.writeHead(303, { Location: to });
   res.end();
@@ -180,6 +240,7 @@ function redirect(res, to) {
 
 const server = http.createServer((req, res) => {
   const routePath = req.url.split("?")[0];
+  if (routePath === "/api/waitlist") return handleWaitlist(req, res);
   // Netlify catches a post to "/" in production. Handle it here too so local testing matches.
   if (routePath === "/api/contact" || (req.method === "POST" && (routePath === "/" || routePath === "/thanks.html"))) {
     if (req.method !== "POST") { res.writeHead(405, { Allow: "POST" }); return res.end(); }

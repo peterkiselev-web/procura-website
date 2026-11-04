@@ -1,41 +1,74 @@
 // Builds the static pages. Each file in src/pages is a page body whose first line is a
 // JSON comment with its settings. Shared chrome (head, header, menu, dock, footer) lives here.
 // Run: node build.js
+//
+// Settings a page can use in its first-line comment:
+//   title, description   required. Keep titles under 65 characters and descriptions under 165.
+//   ogTitle, ogDescription  wording for link previews, if it should differ from the search listing
+//   crumb                short name for the breadcrumb (defaults to the nav label or the title)
+//   faq                  true to publish the page's <details> questions as FAQ structured data
+//   article, published   true plus a YYYY-MM-DD date for guides (adds Article structured data)
+//   noindex              keeps the page out of search engines and the sitemap
+//   three, loader, script  page-specific scripts and effects
 "use strict";
 const fs = require("fs");
 const path = require("path");
 
 const SRC = path.join(__dirname, "src", "pages");
 
-// Live address. Used for canonical links, social previews and the sitemap.
+// Live address. Used for canonical links, social previews, structured data and the sitemap.
 const SITE = "https://procuracharge.com";
 
+// Pages are served at clean addresses (/machines, not /machines.html). The canonical links, the sitemap,
+// the structured data and every internal link use that one form, so search engines see a single address per page.
+const urlFor = (file) => (file === "index.html" ? "/" : "/" + file.replace(/\.html$/, ""));
+
 const NAV = [
-  { href: "index.html", label: "Home" },
-  { href: "machines.html", label: "Machines" },
-  { href: "how-it-works.html", label: "How it works" },
-  { href: "why-host.html", label: "Why host one" },
-  { href: "partnerships.html", label: "Partner" },
-  { href: "about.html", label: "About" },
-  { href: "contact.html", label: "Contact" },
+  { file: "index.html", label: "Home" },
+  { file: "machines.html", label: "Machines" },
+  { file: "how-it-works.html", label: "How it works" },
+  { file: "why-host.html", label: "Why host one" },
+  { file: "partnerships.html", label: "Partner" },
+  { file: "about.html", label: "About" },
+  { file: "contact.html", label: "Contact" },
 ];
 
 // Ways to work with us that are not hosting a machine.
 const PARTNER_NAV = [
-  { href: "referral.html", label: "Referral programme" },
-  { href: "partnerships.html", label: "Strategic partnerships" },
-  { href: "franchise.html", label: "Franchise and territories" },
+  { file: "referral.html", label: "Referral programme" },
+  { file: "partnerships.html", label: "Strategic partnerships" },
+  { file: "franchise.html", label: "Franchise and territories" },
 ];
 
-// The full-screen menu lists every page, including the partner routes the header groups.
+// The full-screen menu lists every page, including the FAQs and the partner routes the header groups.
 const MENU = NAV.concat([
-  { href: "referral.html", label: "Referral programme" },
-  { href: "franchise.html", label: "Franchise" },
+  { file: "faq.html", label: "FAQs" },
+  { file: "referral.html", label: "Referral programme" },
+  { file: "franchise.html", label: "Franchise" },
 ]);
+
+const VENUE_PAGES = [
+  { file: "power-bank-rental-stations-for-bars-and-pubs.html", label: "Bars and pubs" },
+  { file: "power-bank-rental-stations-for-restaurants-and-cafes.html", label: "Restaurants and cafés" },
+  { file: "power-bank-rental-stations-for-gyms.html", label: "Gyms and leisure centres" },
+  { file: "power-bank-rental-stations-for-hotels.html", label: "Hotels" },
+];
+
+const GUIDE_PAGES = [
+  { file: "are-power-bank-rental-stations-worth-it.html", label: "Are power bank rental stations worth it?" },
+  { file: "how-to-choose-a-power-bank-rental-provider.html", label: "How to choose a rental provider" },
+];
 
 const LEGAL =
   "Procura is a trading name of JUKIE Experiences Ltd, a private limited company registered in England and Wales, " +
   "company number 16203343. Registered office: 21 Royal Avenue, London, SW3 4QE.";
+
+// The picture shown when a link is shared in a text, chat or social post. Landscape, 1200 x 630, under 300 KB:
+// that is the shape and size every messaging app and social network is built for. test/seo.test.js checks it.
+const OG_IMAGE = SITE + "/assets/img/share-preview.jpg";
+const OG_IMAGE_WIDTH = 1200;
+const OG_IMAGE_HEIGHT = 630;
+const OG_IMAGE_ALT = "Procura. Free power bank stations for UK venues, with nothing to pay and a share of every rental. A Procura counter station is shown on the right.";
 
 
 // Rental income estimator, dropped into any page body that contains @@ESTIMATOR@@.
@@ -59,43 +92,155 @@ const ESTIMATOR = `<div class="estimator" data-estimator>
       </div>
     </div>`;
 
+// Closing call to action, dropped into any page body that contains @@CTA@@.
+const CTA = `<section class="section cta-band">
+  <div class="glow" style="left:-30vw;right:auto;top:0"></div>
+  <div class="wrap">
+    <span class="label">Next step</span>
+    <h2 data-split>Start with<br>a free call</h2>
+    <p class="lede muted">Contact us for more, and our team will get back to you. Or book a free consultation call now and find out the revenue share split for your venue.</p>
+    <div class="btn-row">
+      <a class="btn" href="contact.html">Book a free consultation call <span class="arrow" aria-hidden="true">&rarr;</span></a>
+      <a class="btn btn--ghost" href="contact.html?type=question">Contact us for more</a>
+    </div>
+  </div>
+</section>`;
+
+// Links to the venue pages and guides, dropped into any page body that contains @@RELATED@@.
+// One list here means every page links to the others without anyone keeping the links in step by hand.
+function related(currentFile) {
+  const list = (pages) => pages.filter((p) => p.file !== currentFile)
+    .map((p) => `<li><a href="${urlFor(p.file)}">${p.label} <span aria-hidden="true">&rarr;</span></a></li>`).join("");
+  const guides = list(GUIDE_PAGES) + (currentFile === "faq.html" ? "" : `<li><a href="/faq">Power bank rental station FAQs <span aria-hidden="true">&rarr;</span></a></li>`);
+  return `<section class="section section--tight is-bone related">
+  <div class="wrap grid-2">
+    <div>
+      <span class="label">Find out more</span>
+      <h2 data-split>Hosting for your type of venue</h2>
+    </div>
+    <div class="related__lists">
+      <div><h3>Power bank rental stations for</h3><ul>${list(VENUE_PAGES)}</ul></div>
+      <div><h3>Guides and answers</h3><ul>${guides}</ul></div>
+    </div>
+  </div>
+</section>`;
+}
+
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-function head(meta) {
+// Plain text from an HTML fragment, for structured data.
+function plain(html) {
+  return html.replace(/<[^>]+>/g, " ").replace(/&rarr;/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+}
+
+// Questions and answers from the page's visible <details> blocks, so the markup and the page cannot drift apart.
+function faqFrom(body) {
+  const re = /<details>\s*<summary>([\s\S]*?)<span class="plus"[^>]*><\/span><\/summary>\s*<div class="faq__a"><div>([\s\S]*?)<\/div><\/div>\s*<\/details>/g;
+  const out = [];
+  let m;
+  while ((m = re.exec(body))) out.push({ q: plain(m[1]), a: plain(m[2]) });
+  return out;
+}
+
+const ORG_ID = SITE + "/#organization";
+const SITE_ID = SITE + "/#website";
+
+function structuredData(file, meta, body) {
+  const graph = [
+    {
+      "@type": "Organization", "@id": ORG_ID, name: "Procura", legalName: "JUKIE Experiences Ltd", url: SITE + "/",
+      logo: { "@type": "ImageObject", url: SITE + "/assets/img/favicon.svg" },
+      image: OG_IMAGE,
+      description: "Procura installs, runs and insures power bank rental stations in UK venues for free, and pays hosts a share of every rental.",
+      foundingDate: "2025",
+      areaServed: [{ "@type": "City", name: "London" }, { "@type": "Country", name: "United Kingdom" }],
+      contactPoint: { "@type": "ContactPoint", contactType: "sales", url: SITE + "/contact", areaServed: "GB", availableLanguage: "English" },
+    },
+    { "@type": "WebSite", "@id": SITE_ID, url: SITE + "/", name: "Procura", inLanguage: "en-GB", publisher: { "@id": ORG_ID } },
+  ];
+  const pageId = meta.url + "#webpage";
+  if (meta.article) {
+    graph.push({
+      "@type": "Article", "@id": meta.url + "#article", headline: meta.title.replace(/\s*\|\s*Procura$/, ""), description: meta.description,
+      datePublished: meta.published, dateModified: meta.published, image: OG_IMAGE, inLanguage: "en-GB",
+      author: { "@id": ORG_ID }, publisher: { "@id": ORG_ID }, mainEntityOfPage: { "@id": pageId },
+    });
+  }
+  graph.push({
+    "@type": "WebPage", "@id": pageId, url: meta.url, name: meta.title, description: meta.description, inLanguage: "en-GB",
+    isPartOf: { "@id": SITE_ID }, about: { "@id": ORG_ID }, primaryImageOfPage: { "@type": "ImageObject", url: OG_IMAGE },
+  });
+  if (file !== "index.html") {
+    const nav = NAV.find((n) => n.file === file);
+    const crumb = meta.crumb || (nav && nav.label) || meta.title.replace(/\s*\|\s*Procura$/, "");
+    graph.push({
+      "@type": "BreadcrumbList", "@id": meta.url + "#breadcrumb",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: SITE + "/" },
+        { "@type": "ListItem", position: 2, name: crumb, item: meta.url },
+      ],
+    });
+  }
+  if (meta.faq) {
+    const items = faqFrom(body);
+    if (!items.length) throw new Error(`${file}: "faq" is set but no <details> questions were found`);
+    graph.push({
+      "@type": "FAQPage", "@id": meta.url + "#faq", url: meta.url, isPartOf: { "@id": pageId },
+      mainEntity: items.map((i) => ({ "@type": "Question", name: i.q, acceptedAnswer: { "@type": "Answer", text: i.a } })),
+    });
+  }
+  const json = JSON.stringify({ "@context": "https://schema.org", "@graph": graph }).replace(/</g, "\\u003c");
+  return `<script type="application/ld+json">${json}</script>`;
+}
+
+function head(meta, file, body) {
+  const t = esc(meta.title), d = esc(meta.description);
+  // The text shown in link previews can differ from the search listing, so each can be tuned on its own.
+  const ot = esc(meta.ogTitle || meta.title), od = esc(meta.ogDescription || meta.description);
   return `<!doctype html>
 <html lang="en-GB" class="no-js">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>${esc(meta.title)}</title>
-<meta name="description" content="${esc(meta.description)}">
+<title>${t}</title>
+<meta name="description" content="${d}">
+<meta name="robots" content="${meta.noindex ? "noindex" : "index, follow, max-image-preview:large"}">
 <meta name="theme-color" content="#0a0a0a">
-<meta property="og:title" content="${esc(meta.title)}">
-<meta property="og:description" content="${esc(meta.description)}">
-<meta property="og:type" content="website">
-<meta property="og:image" content="${SITE}/assets/img/station-graphite.jpg">
+<meta property="og:title" content="${ot}">
+<meta property="og:description" content="${od}">
+<meta property="og:type" content="${meta.article ? "article" : "website"}">
+<meta property="og:image" content="${OG_IMAGE}">
+<meta property="og:image:secure_url" content="${OG_IMAGE}">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="${OG_IMAGE_WIDTH}">
+<meta property="og:image:height" content="${OG_IMAGE_HEIGHT}">
+<meta property="og:image:alt" content="${esc(OG_IMAGE_ALT)}">
 <meta property="og:url" content="${meta.url}">
 <meta property="og:site_name" content="Procura">
 <meta property="og:locale" content="en_GB">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="canonical" href="${meta.url}">${meta.noindex ? '\n<meta name="robots" content="noindex">' : ""}
-<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<meta name="twitter:title" content="${ot}">
+<meta name="twitter:description" content="${od}">
+<meta name="twitter:image" content="${OG_IMAGE}">
+<meta name="twitter:image:alt" content="${esc(OG_IMAGE_ALT)}">
+${meta.noindex ? "" : `<link rel="canonical" href="${meta.url}">\n`}<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="css/style.css">
 ${meta.three ? `<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js" crossorigin>
-<link rel="preload" href="assets/models/procura-station.glb" as="fetch" crossorigin>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}</script>` : ""}
-</head>`;
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}</script>
+` : ""}${meta.noindex ? "" : structuredData(file, meta, body) + "\n"}</head>`;
 }
 
 function chrome(slug, meta) {
-  const partnerSlugs = PARTNER_NAV.map((n) => n.href);
-  const isCurrent = (href) => href === slug || (href === "partnerships.html" && partnerSlugs.includes(slug));
-  const links = NAV.map((n) => `<a href="${n.href}"${isCurrent(n.href) ? ' aria-current="page"' : ""}>${n.label}</a>`).join("");
-  const menuLinks = MENU.map((n, i) => `<li><a href="${n.href}"${n.href === slug ? ' aria-current="page"' : ""}><small>${String(i + 1).padStart(2, "0")}</small>${n.label}</a></li>`).join("\n      ");
+  const partnerSlugs = PARTNER_NAV.map((n) => n.file);
+  const isCurrent = (file) => file === slug || (file === "partnerships.html" && partnerSlugs.includes(slug));
+  const links = NAV.map((n) => `<a href="${urlFor(n.file)}"${isCurrent(n.file) ? ' aria-current="page"' : ""}>${n.label}</a>`).join("");
+  const menuLinks = MENU.map((n, i) => `<li><a href="${urlFor(n.file)}"${n.file === slug ? ' aria-current="page"' : ""}><small>${String(i + 1).padStart(2, "0")}</small>${n.label}</a></li>`).join("\n      ");
   return `<body${meta.loader ? ' class="is-loading"' : ""}>
 <a class="skip" href="#main">Skip to content</a>
 ${meta.loader ? `<div class="loader" aria-hidden="true">
@@ -127,7 +272,9 @@ ${meta.loader ? `<div class="loader" aria-hidden="true">
 }
 
 function footer() {
-  const links = NAV.map((n) => `<li><a href="${n.href}">${n.label}</a></li>`).join("");
+  const links = NAV.map((n) => `<li><a href="${urlFor(n.file)}">${n.label}</a></li>`).join("");
+  const venues = VENUE_PAGES.map((p) => `<li><a href="${urlFor(p.file)}">${p.label}</a></li>`).join("");
+  const guides = GUIDE_PAGES.map((p) => `<li><a href="${urlFor(p.file)}">${p.label}</a></li>`).join("");
   return `
 <footer class="footer">
   <div class="wrap">
@@ -138,8 +285,9 @@ function footer() {
         <p class="muted">Power bank rental stations for gyms, hotels, cafés, bars and train stations. Free to host, with a share of every rental for you. Now opening in London.</p>
       </div>
       <div><span class="label">Pages</span><ul>${links}</ul></div>
-      <div><span class="label">Partner with us</span><ul>${PARTNER_NAV.map((n) => `<li><a href="${n.href}">${n.label}</a></li>`).join("")}</ul></div>
-      <div><span class="label">Talk to us</span><ul><li><a href="contact.html">Book a free consultation</a></li><li><a href="contact.html?type=question">Ask a question</a></li><li><a href="index.html#faq">FAQs</a></li></ul></div>
+      <div><span class="label">Hosting for</span><ul>${venues}</ul></div>
+      <div><span class="label">Guides and help</span><ul><li><a href="${urlFor("faq.html")}">FAQs</a></li>${guides}<li><a href="contact.html?type=question">Ask a question</a></li></ul></div>
+      <div><span class="label">Partner with us</span><ul>${PARTNER_NAV.map((n) => `<li><a href="${urlFor(n.file)}">${n.label}</a></li>`).join("")}</ul></div>
       <div><span class="label">Legal</span><ul><li><a href="privacy.html">Privacy notice</a></li></ul></div>
     </div>
     <div class="footer__legal">
@@ -157,31 +305,44 @@ function scripts(meta) {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" integrity="sha384-Z3REaz79l2IaAZqJsSABtTbhjgOUYyV3p90XNnAPCSHg3EMTz1fouunq9WZRtj3d" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js" integrity="sha384-B2WBjDzEjJpYvhmi2UyEn7rektqkf5suS6sNoyyrf0EBAwBHdkiXxIlU0V5Ru2ed" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="js/main.js"></script>
-${meta.three ? '<script type="module" src="js/station.js"></script>' : ""}
+${meta.three ? '<script type="module" src="js/station.js"></script>' : ""}${meta.script ? `\n<script src="js/${meta.script}"></script>` : ""}
 </body>
 </html>
 `;
 }
 
+// Internal links are written as "contact.html" in the source pages. On the live site they are "/contact".
+// Assets get a leading slash so they load from any address.
+function cleanLinks(html) {
+  return html
+    .replace(/href="index\.html(#[^"]*)?"/g, (m, hash) => `href="/${hash || ""}"`)
+    .replace(/href="([a-z0-9-]+)\.html([?#][^"]*)?"/g, (m, name, rest) => `href="/${name}${rest || ""}"`)
+    .replace(/\b(src|href|poster)="(assets|css|js)\//g, '$1="/$2/');
+}
+
 let count = 0;
-for (const file of fs.readdirSync(SRC).filter((f) => f.endsWith(".html"))) {
+const hidden = new Set(); // pages marked noindex are left out of the sitemap
+const files = fs.readdirSync(SRC).filter((f) => f.endsWith(".html"));
+for (const file of files) {
   const raw = fs.readFileSync(path.join(SRC, file), "utf8");
   const m = raw.match(/^<!--\s*(\{[\s\S]*?\})\s*-->\n/);
   if (!m) throw new Error(`${file}: missing settings comment on line 1`);
   const meta = JSON.parse(m[1]);
-  meta.url = SITE + (file === "index.html" ? "/" : "/" + file);
-  const body = raw.slice(m[0].length).split("@@ESTIMATOR@@").join(ESTIMATOR);
-  const html = head(meta) + "\n" + chrome(file, meta) + '\n<main id="main">\n' + body + "\n</main>\n" + footer() + scripts(meta);
-  if (/\u2014|\u2013/.test(html)) throw new Error(`${file}: contains an em or en dash`);
+  meta.url = SITE + urlFor(file);
+  if (meta.article && !/^\d{4}-\d{2}-\d{2}$/.test(meta.published || "")) throw new Error(`${file}: "article" needs "published": "YYYY-MM-DD"`);
+  if (meta.noindex) hidden.add(file);
+  const body = raw.slice(m[0].length).split("@@ESTIMATOR@@").join(ESTIMATOR).split("@@RELATED@@").join(related(file)).split("@@CTA@@").join(CTA);
+  const html = cleanLinks(head(meta, file, body) + "\n" + chrome(file, meta) + '\n<main id="main">\n' + body + "\n</main>\n" + footer() + scripts(meta));
+  if (/—|–/.test(html)) throw new Error(`${file}: contains an em or en dash`);
   fs.writeFileSync(path.join(__dirname, file), html);
   count++;
 }
+
 // Search engine files
-const pages = fs.readdirSync(SRC).filter((f) => f.endsWith(".html") && f !== "thanks.html");
-const today = new Date().toISOString().slice(0, 10);
+const pages = files.filter((f) => !hidden.has(f));
 fs.writeFileSync(path.join(__dirname, "sitemap.xml"),
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-  pages.map((f) => `  <url><loc>${SITE}${f === "index.html" ? "/" : "/" + f}</loc><lastmod>${today}</lastmod></url>`).join("\n") +
+  pages.map((f) => `  <url><loc>${SITE}${urlFor(f)}</loc></url>`).join("\n") +
   `\n</urlset>\n`);
 fs.writeFileSync(path.join(__dirname, "robots.txt"), `User-agent: *\nAllow: /\nDisallow: /src/\n\nSitemap: ${SITE}/sitemap.xml\n`);
 

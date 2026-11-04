@@ -6,13 +6,27 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 
-const MODEL_URL = "assets/models/procura-station.glb";
+const MODEL_URL = "/assets/models/procura-station.glb";
 const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// The model is 5.6 MB. It waits until the page has loaded and the browser is idle, so it never competes with
+// the first paint, and it is skipped on slow connections and data-saver mode (the still image is shown instead).
+function lowBandwidth() {
+  const c = navigator.connection;
+  return !!(c && (c.saveData || /^(slow-2g|2g|3g)$/.test(c.effectiveType || "")));
+}
+function whenIdle() {
+  return new Promise((resolve) => {
+    const go = () => (window.requestIdleCallback ? window.requestIdleCallback(() => resolve(), { timeout: 3000 }) : setTimeout(resolve, 1200));
+    if (document.readyState === "complete") go(); else window.addEventListener("load", go, { once: true });
+  });
+}
 
 let modelPromise = null;
 function loadModel() {
   if (!modelPromise) {
-    modelPromise = new GLTFLoader().loadAsync(MODEL_URL).then((gltf) => {
+    if (lowBandwidth()) return Promise.reject(new Error("model skipped on a slow connection"));
+    modelPromise = whenIdle().then(() => new GLTFLoader().loadAsync(MODEL_URL)).then((gltf) => {
       window.dispatchEvent(new Event("procura:model-ready"));
       return gltf.scene;
     });
