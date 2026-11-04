@@ -218,3 +218,20 @@ test("the footer on every public page links to the FAQs, the venue pages and the
     }
   }
 });
+
+test("machine names and slot counts agree everywhere: Floor 24 and Tower 48", () => {
+  for (const p of pages) {
+    assert.ok(!/Floor 20|Tower 40|\b20-slot|\b40-slot|\b20 slots|\b40 slots|\btwenty banks|\bforty banks/i.test(p.html), `${p.file}: still uses the old Floor 20 / Tower 40 wording`);
+  }
+  const m = pages.find((p) => p.file === "machines.html").html;
+  assert.match(m, /Procura Floor 24/); assert.match(m, /Procura Tower 48/);
+  assert.match(m, /<th scope="row">Slots<\/th><td>24<\/td>/); assert.match(m, /<th scope="row">Slots<\/th><td>48<\/td>/);
+  assert.match(m, /<td>12, or 24 stacked<\/td><td>24<\/td><td>48<\/td>/, "the comparison table");
+  assert.match(attr(m, /<meta name="description" content="([^"]+)"/), /24-slot floor kiosk.*48-slot tower/, "search listing");
+  assert.match(attr(m, /<meta property="og:description" content="([^"]+)"/), /24-slot floor kiosk.*48-slot Tower/, "link preview");
+  const home = pages.find((p) => p.file === "index.html").html;
+  assert.match(home, /<span class="chip">24 slots<\/span>/); assert.match(home, /<span class="chip">48 slots<\/span>/);
+  assert.match(home, /<h3>Procura Floor 24<\/h3>/); assert.match(home, /<h3>Procura Tower 48<\/h3>/);
+  // the picture descriptions must not state a slot count the photos do not show
+  for (const img of m.match(/<img\b[^>]*kiosk(20|40)\.webp[^>]*>/g)) assert.ok(!/\b(ten|twenty|forty) slots/i.test(img), `alt text states a count: ${img}`);
+});
