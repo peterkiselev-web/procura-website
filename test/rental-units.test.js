@@ -337,7 +337,7 @@ test("rent API: methods, routing and rate limits", async () => {
   const res = await rentApi(rt, { method: "GET", action: "station", query: { station: "AJ1" } });
   assert.equal(res.headers["Cache-Control"], "no-store");
   let last;
-  for (let i = 0; i < 70; i++) last = await rentApi(rt, { method: "GET", action: "station", query: { station: "AJ1" }, ip: "9.9.9.9" });
+  for (let i = 0; i < 310; i++) last = await rentApi(rt, { method: "GET", action: "station", query: { station: "AJ1" }, ip: "9.9.9.9" });
   assert.equal(last.status, 429);
   const start = await rentApi(rt, { method: "POST", action: "start", body: { station: "AJ1", email: "a@b.co", consent: true, consentVersion: h.version }, ip: "1.1.1.1" });
   assert.equal(start.status, 200);
