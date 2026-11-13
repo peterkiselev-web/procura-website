@@ -389,3 +389,42 @@ test("admin: password protected, switched off without a strong password, and eve
   for (let i = 0; i < 35; i++) limited = await get(auth("admin", "nope-nope-nope-nope"), "brute");
   assert.equal(limited.status, 429);
 });
+
+// ---- the database matches the code --------------------------------------------------------------------------------
+test("every column the service writes exists in the SQL migration (a fake store would never notice a missing one)", async () => {
+  const fs = require("node:fs");
+  const sql = fs.readFileSync(require("node:path").join(__dirname, "..", "supabase", "migrations", "0001_rentals.sql"), "utf8");
+  const table = sql.match(/create table if not exists public\.rentals \(([\s\S]*?)\n\);/)[1];
+  const columns = new Set(table.split("\n").map((l) => (l.match(/^\s{2}([a-z_]+)\s+[a-z]/) || [])[1]).filter(Boolean));
+  assert.ok(columns.size > 30);
+
+  const { HOUR, MIN } = require("./rental-helpers");
+  const used = new Set();
+  const note = (row) => Object.keys(row).forEach((k) => used.add(k));
+  const run = async (scenario) => {
+    const h = setup();
+    const realInsert = h.store.insert, realUpdate = h.store.update;
+    h.store.insert = async (row) => { note(row); return realInsert.call(h.store, row); };
+    h.store.update = async (id, patch, expect) => { note(patch); Object.keys(expect || {}).forEach((k) => used.add(k)); return realUpdate.call(h.store, id, patch, expect); };
+    await scenario(h);
+  };
+  await run(async (h) => { const r = await h.rentUntilActive(); h.advance(2 * HOUR); h.supplier.simulateReturn(r.row.trade_no, h.clock.t); await h.service.pollActive(await h.store.get(r.rentalId)); });
+  await run(async (h) => { const r = await h.rentUntilActive(); h.advance(13 * HOUR); await h.service.pollActive(await h.store.get(r.rentalId)); });
+  await run(async (h) => { h.supplier.control.neverRelease = true; const s = await h.start(); const row = await h.store.get(s.json.rentalId); await h.pay(row.stripe_payment_intent_id); h.advance(61 * 1000); await h.service.runJobs(); });
+  await run(async (h) => { h.fakeStripe.controls.decline = "insufficient_funds"; const r = await h.rentUntilActive(); h.advance(2 * HOUR); h.supplier.simulateReturn(r.row.trade_no, h.clock.t); await h.service.pollActive(await h.store.get(r.rentalId)); h.advance(61 * MIN); await h.service.runJobs(); });
+  await run(async (h) => { const s = await h.start(); h.advance(31 * MIN); await h.service.runJobs(); });
+  await run(async (h) => { const r = await h.rentUntilActive(); await h.service.handleSupplierHint(r.rentalId, "x"); await h.store.update(r.rentalId, { stripe_payment_method_id: null }); h.supplier.control.closeFails = true; h.advance(2 * HOUR); h.supplier.simulateReturn(r.row.trade_no, h.clock.t); await h.service.pollActive(await h.store.get(r.rentalId)); });
+  const missing = [...used].filter((k) => !columns.has(k));
+  assert.deepEqual(missing, [], `columns used by the code but not in the migration: ${missing.join(", ")}`);
+});
+
+test("Supabase store: the take-over of an abandoned webhook event works with a real timestamp (it has a + in it)", async () => {
+  const pg = fakePostgrest();
+  let t = Date.parse("2026-11-20T10:00:00Z");
+  const store = createSupabaseStore({ url: "https://x.supabase.co", key: "k", fetchImpl: pg.fetchImpl, now: () => new Date(t) });
+  assert.equal(await store.claimEvent("evt_1", "x"), "new");
+  pg.tables.stripe_events.get("evt_1").created_at = "2026-11-20T10:00:00.123456+00:00"; // how Postgres writes it back
+  assert.equal(await store.claimEvent("evt_1", "x"), "busy");
+  t += 6 * 60 * 1000;
+  assert.equal(await store.claimEvent("evt_1", "x"), "new", "taken over after the lease ran out");
+});

@@ -26,6 +26,7 @@ create table if not exists public.rentals (
   borrow_time               timestamptz,              -- supplier clock, used for billing
   return_time               timestamptz,              -- supplier clock, used for billing
   cutoff_at                 timestamptz,
+  settle_kind               text,                     -- 'return' or 'cutoff': which settlement this rental is on
   rent_pence                integer,                  -- total rent worked out at return or cut-off
   fee_pence                 integer not null default 0,
   due_pence                 integer,                  -- still to charge at return or cut-off
