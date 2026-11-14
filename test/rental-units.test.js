@@ -476,3 +476,29 @@ test("supplier client reports the shape of the cabinet reply, with no identifier
   assert.deepEqual(cab.shape.vols, [90]);
   assert.ok(!JSON.stringify(cab.shape).includes("SECRETQR"), "the QR content is not echoed");
 });
+
+test("the machine counts as online whichever field the supplier uses (the live API sends 'online', the docs say 'isOnline')", async () => {
+  const cabinetWith = async (cabinet) => {
+    const http = fakeSupplierHttp(() => ({ body: { code: 0, data: { cabinet, batteries: [{ slotNum: 1, batteryId: "B1", vol: 100 }] } } }));
+    return createBajieSupplier({ ...base, authMode: "basic_plain", fetchImpl: http.fetchImpl }).checkCabinet("D1");
+  };
+  for (const yes of [{ online: true }, { online: 1 }, { online: "1" }, { online: "true" }, { online: "online" }, { isOnline: true }, { isOnline: true, online: false }]) {
+    assert.equal((await cabinetWith(yes)).online, true, JSON.stringify(yes));
+  }
+  for (const no of [{ online: false }, { online: 0 }, { online: "offline" }, {}, { isOnline: false, online: true }, { posOnlineStatus: "online" }]) {
+    assert.equal((await cabinetWith(no)).online, false, JSON.stringify(no));
+  }
+});
+
+test("an order reply laid out differently is reported with its field names", async () => {
+  const http = fakeSupplierHttp((c) => (c.path.endsWith("/create") ? { body: { code: 0, data: { orderNo: "X1", orderId: 5 } } } : { body: { code: 0, data: { orderId: "T1", startTime: "2026-11-14 10:00:00" } } }));
+  const sup = createBajieSupplier({ ...base, authMode: "basic_plain", fetchImpl: http.fetchImpl });
+  const e = await sup.createOrder("D1", "https://x").catch((x) => x);
+  assert.match(e.message, /fields: orderNo, orderId/);
+  assert.equal(e.definitive, false, "still treated as unknown: never asked again, refunded by the 60 second rule");
+  const d = await sup.getOrderDetail("T1");
+  assert.deepEqual(d.detail._fields, ["orderId", "startTime"]);
+  assert.equal(d.borrowTime, null);
+  const html = renderAdmin({ attention: [], open: [{ id: "r1", created_at: new Date().toISOString(), station: "AJ1", status: "releasing", last_detail: d.detail, history: [], flags: [] }], failed: [], refunds: [], recent: [], stripeMode: "test" }, loadConfig({}));
+  assert.match(html, /supplier order fields differ from the documentation: orderId, startTime/);
+});
