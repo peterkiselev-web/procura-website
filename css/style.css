@@ -547,4 +547,5 @@ html { overflow-x: clip; }
 .rent-take .label, .rent-take .muted { color: rgba(237,234,227,0.8); }
 .rent-take h2 { color: #fff; }
 .rent-foot { font-size: 14px; }
+.rent-ar { font-size: 18px; line-height: 1.7; text-align: right; }
 .is-bone blockquote { margin: 16px 0; padding: 16px 20px; border-left: 3px solid var(--ink); background: rgba(10,10,10,0.05); border-radius: 0 12px 12px 0; }

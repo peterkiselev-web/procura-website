@@ -125,6 +125,8 @@
     if (!station) { show("unknown"); return; }
     api("/api/rent/station?station=" + encodeURIComponent(station)).then(function (res) {
       if (res.status === 404) { show("unknown"); return; }
+      // Not switched on yet (payment settings not in place): send people to the machine's own screen.
+      if (res.status === 503 && res.json.error === "not_configured") { $("[data-station-line]").textContent = "Coming soon"; show("soon"); return; }
       if (res.status !== 200 || !res.json.ok) throw new Error("station " + res.status);
       station_ = res.json;
       $("[data-station-line]").textContent = station_.station.name;
@@ -195,6 +197,7 @@
         if (res.status === 409 && res.json.error === "terms_changed") { location.reload(); throw { quiet: true }; }
         if (res.status === 409) { show("unavailable"); throw { quiet: true }; }
         if (res.status === 400 && res.json.message) throw { shown: res.json.message };
+        if (res.status === 503 && res.json.error === "not_configured") { show("soon"); throw { quiet: true }; }
         if (res.status === 429) throw { shown: "Too many attempts. Please wait a few minutes and try again." };
         if (res.status !== 200 || !res.json.ok) throw { shown: "We couldn't start the payment. You have not been charged. Please try again." };
         return { rentalId: res.json.rentalId, token: res.json.token, clientSecret: res.json.clientSecret };

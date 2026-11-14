@@ -154,3 +154,27 @@ test("the rent page works end to end in a browser", { skip: !chromium && "Playwr
     await post("/__dev/supplier/machine?deviceId=DTA59552&neverRelease=0");
   });
 });
+
+test("before the payment settings are in, the page sends people to the machine's own screen", { skip: !chromium && "Playwright is not installed", timeout: 60000 }, async (t) => {
+  const port = PORT + 600;
+  const env = { ...process.env, PORT: String(port) };
+  for (const k of Object.keys(ENV)) if (k !== "PORT" && !(k in process.env)) delete env[k];
+  for (const k of ["STRIPE_FAKE", "STRIPE_SECRET_KEY", "STRIPE_PUBLISHABLE_KEY", "STRIPE_WEBHOOK_SECRET", "STATIONS", "SITE_URL", "SUPPLIER_MODE", "RENTAL_STORE", "CONTEXT", "NETLIFY"]) delete env[k];
+  const server = spawn(process.execPath, [path.join(__dirname, "..", "server.js")], { env, stdio: ["ignore", "pipe", "pipe"] });
+  let log = "";
+  server.stdout.on("data", (d) => { log += d; });
+  t.after(() => server.kill());
+  for (let i = 0; i < 50 && !log.includes("running at"); i++) await new Promise((r) => setTimeout(r, 100));
+  assert.match(log, /Rental: off/);
+  let browser;
+  try { browser = await chromium.launch(); } catch (e) { t.skip("no browser available"); return; }
+  t.after(() => browser.close());
+  const page = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
+  await page.route("**/*", (route) => (new URL(route.request().url()).hostname === "localhost" ? route.continue() : route.abort()));
+  await page.goto(`http://localhost:${port}/rent?station=AJ1`);
+  await page.waitForSelector('[data-state="soon"]:not([hidden])', { timeout: 10000 });
+  const text = await page.locator('[data-state="soon"]').innerText();
+  assert.match(text, /screen on the machine/);
+  assert.match(text, /You have not been charged/);
+  assert.equal(await page.locator("#rent-form").isHidden(), true);
+});
