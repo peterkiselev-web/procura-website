@@ -445,3 +445,34 @@ test("setup check: names what is missing without ever showing a value", async ()
   const ready = await rentApi(runtimeFor(h), { method: "GET", action: "health", ip: "h2" });
   assert.deepEqual(JSON.parse(ready.body), { ok: true, ready: true, problems: [] });
 });
+
+test("setup check with a station: shows what the supplier said about the machine, without its device id", async () => {
+  const h = setup();
+  const rt = runtimeFor(h);
+  const out = JSON.parse((await rentApi(rt, { method: "GET", action: "health", query: { station: "aj1" }, ip: "h3" })).body);
+  assert.equal(out.ready, true);
+  assert.equal(out.machine.station, "AJ1");
+  assert.equal(out.machine.reachable, true);
+  assert.equal(out.machine.online, true);
+  assert.equal(out.machine.canRent, true);
+  h.supplier.setOnline("DTA59552", false);
+  const off = JSON.parse((await rentApi(rt, { method: "GET", action: "health", query: { station: "AJ1" }, ip: "h4" })).body);
+  assert.equal(off.machine.online, false);
+  h.supplier.control.down = true;
+  const down = JSON.parse((await rentApi(rt, { method: "GET", action: "health", query: { station: "AJ1" }, ip: "h5" })).body);
+  assert.equal(down.machine.reachable, false);
+  assert.equal(down.machine.error.kind, "network");
+  const unknown = JSON.parse((await rentApi(rt, { method: "GET", action: "health", query: { station: "ZZ" }, ip: "h6" })).body);
+  assert.equal(unknown.machine.known, false);
+  for (const o of [out, off, down]) assert.ok(!JSON.stringify(o).includes("DTA59552"));
+});
+
+test("supplier client reports the shape of the cabinet reply, with no identifiers", async () => {
+  const http = fakeSupplierHttp(() => ({ body: { code: 0, data: { cabinet: { id: 77, qrCode: "SECRETQR", isOnline: false, offlineCause: "network", signal: 12, slots: 8 }, batteries: [{ slotNum: 1, batteryId: "B1", vol: 90 }], shop: { name: "x" } } } }));
+  const cab = await createBajieSupplier({ ...base, authMode: "basic_plain", fetchImpl: http.fetchImpl }).checkCabinet("D1");
+  assert.deepEqual(cab.shape.dataKeys, ["cabinet", "batteries", "shop"]);
+  assert.equal(cab.shape.isOnline, false);
+  assert.equal(cab.shape.offlineCause, "network");
+  assert.deepEqual(cab.shape.vols, [90]);
+  assert.ok(!JSON.stringify(cab.shape).includes("SECRETQR"), "the QR content is not echoed");
+});
