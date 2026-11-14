@@ -100,7 +100,7 @@ test("webhook signature: right secret and body pass, everything else is refused"
   refuse(body + " ", header);
   refuse(body, "");
   refuse(body, "garbage");
-  refuse(body, header.replace(/v1=[0-9a-f]/, "v1=0"));
+  refuse(body, header.replace(/v1=(.)/, (m, c) => "v1=" + (c === "0" ? "1" : "0"))); // always a real change
   refuse(body, header, "whsec_a", { nowMs: now + 6 * 60 * 1000 });
   refuse(body, header, "whsec_a", { toleranceSeconds: 0 });
   refuse(body, header, "");
@@ -427,4 +427,21 @@ test("Supabase store: the take-over of an abandoned webhook event works with a r
   assert.equal(await store.claimEvent("evt_1", "x"), "busy");
   t += 6 * 60 * 1000;
   assert.equal(await store.claimEvent("evt_1", "x"), "new", "taken over after the lease ran out");
+});
+
+test("setup check: names what is missing without ever showing a value", async () => {
+  const { loadConfig, configProblems } = require("../lib/rental/config");
+  const env = { STRIPE_SECRET_KEY: "rk_test_SECRETVALUE123", STRIPE_PUBLISHABLE_KEY: "pk_test_x", BAJIE_PASSWORD: "hunter2-secret", BAJIE_USERNAME: "u", SUPABASE_SERVICE_ROLE_KEY: "eyJsecret" };
+  const config = loadConfig(env);
+  const rt = { ready: false, problems: configProblems(config, env), log: () => {} };
+  const out = await rentApi(rt, { method: "GET", action: "health", ip: "h1" });
+  assert.equal(out.status, 200);
+  const j = JSON.parse(out.body);
+  assert.equal(j.ready, false);
+  assert.ok(j.problems.some((p) => /STRIPE_WEBHOOK_SECRET/.test(p)));
+  assert.ok(j.problems.some((p) => /SITE_URL/.test(p)));
+  for (const secret of Object.values(env)) if (secret.length > 3) assert.ok(!out.body.includes(secret), "no value leaks");
+  const h = setup();
+  const ready = await rentApi(runtimeFor(h), { method: "GET", action: "health", ip: "h2" });
+  assert.deepEqual(JSON.parse(ready.body), { ok: true, ready: true, problems: [] });
 });

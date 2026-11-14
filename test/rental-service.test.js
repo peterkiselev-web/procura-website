@@ -78,7 +78,7 @@ test("a power bank is released only after a verified payment webhook", async () 
 
   // A forged webhook is refused and releases nothing.
   const forged = h.fakeStripe.completePayment(row.stripe_payment_intent_id);
-  const bad = await h.service.handleStripeWebhook(forged.body, forged.signature.replace(/v1=./, "v1=0"));
+  const bad = await h.service.handleStripeWebhook(forged.body, forged.signature.replace(/v1=(.)/, (m, c) => "v1=" + (c === "0" ? "1" : "0")));
   assert.equal(bad.status, 400);
   assert.equal(createOrders(h).length, 0);
   assert.equal((await h.store.get(row.id)).status, S.CREATED);
