@@ -8,9 +8,15 @@
 
 # The waitlist function writes venue details into ClickUp. It needs CLICKUP_TOKEN and CLICKUP_LIST_ID
 # set under Site configuration > Environment variables. See README.md.
+# The QR rental functions (rent, stripe-webhook, bajie-callback, rent-cron, admin) need the variables listed in
+# .env.example and the README section "QR rental setup". Without them every rental request answers "not configured".
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
+
+# Runs every minute on the published production deploy only (Netlify does not run it on previews or branch deploys).
+[functions."rent-cron"]
+  schedule = "* * * * *"
 
 [[headers]]
   for = "/*"
@@ -18,14 +24,29 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     X-Frame-Options = "SAMEORIGIN"
-    Permissions-Policy = "geolocation=(), microphone=(), camera=(), payment=()"
-    Cross-Origin-Opener-Policy = "same-origin"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=(), payment=(self \"https://js.stripe.com\" \"https://*.js.stripe.com\")"
+    Cross-Origin-Opener-Policy = "same-origin-allow-popups"
     X-Permitted-Cross-Domain-Policies = "none"
-    Content-Security-Policy = "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'sha256-PJuPofc3VlYWTUNXN9BXKt1IhI2wg5qUvxVGhJE5x5k='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self'; connect-src 'self' blob: https://cdn.jsdelivr.net; worker-src 'self' blob:"
+    Content-Security-Policy = "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://js.stripe.com https://*.js.stripe.com 'sha256-PJuPofc3VlYWTUNXN9BXKt1IhI2wg5qUvxVGhJE5x5k='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.stripe.com; media-src 'self'; connect-src 'self' blob: https://cdn.jsdelivr.net https://api.stripe.com; frame-src 'self' https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com; worker-src 'self' blob:"
 
 # The waitlist page is private to invited venues: keep it out of search and out of caches.
 [[headers]]
   for = "/waitlist*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Cache-Control = "no-store"
+    Referrer-Policy = "no-referrer"
+
+# The rent page and its terms are reached by QR code, not search. The admin list is private.
+[[headers]]
+  for = "/rent*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Cache-Control = "no-store"
+    Referrer-Policy = "no-referrer"
+
+[[headers]]
+  for = "/admin*"
   [headers.values]
     X-Robots-Tag = "noindex, nofollow"
     Cache-Control = "no-store"
@@ -42,7 +63,56 @@
   status = 200
   force = true
 
+# QR rental endpoints. Each is a Netlify function; the paths are what Stripe, the supplier and the page call.
+[[redirects]]
+  from = "/api/rent/*"
+  to = "/.netlify/functions/rent/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/stripe/webhook"
+  to = "/.netlify/functions/stripe-webhook"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/bajie/callback/*"
+  to = "/.netlify/functions/bajie-callback/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/admin"
+  to = "/.netlify/functions/admin"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/admin/*"
+  to = "/.netlify/functions/admin"
+  status = 200
+  force = true
+
 # Source files, docs, tests and the local server are not part of the published site.
+[[redirects]]
+  from = "/js/dev-stripe.js"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/lib/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/supabase/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
 [[redirects]]
   from = "/src/*"
   to = "/404.html"

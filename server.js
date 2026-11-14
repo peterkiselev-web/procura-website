@@ -8,6 +8,9 @@ const fs = require("fs");
 const path = require("path");
 const { URLSearchParams } = require("url");
 const waitlistFn = require("./netlify/functions/waitlist.js");
+const rentalHttp = require("./lib/rental/http");
+const { getRuntime } = require("./lib/rental/runtime");
+const { renderAdmin } = require("./lib/rental/admin-html");
 
 const ROOT = __dirname;
 loadEnv(path.join(ROOT, ".env"));
@@ -17,9 +20,9 @@ const HOST = process.env.HOST || "127.0.0.1";
 const LOG_FILE = path.join(ROOT, "data", "enquiries.log");
 const MAX_BODY = 20 * 1024;
 
-// Keep this in step with netlify.toml. The sha256 pins the inline import map in the built pages,
-// so run `node build.js` and recompute it if that map ever changes.
-const CSP = "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'sha256-PJuPofc3VlYWTUNXN9BXKt1IhI2wg5qUvxVGhJE5x5k='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self'; connect-src 'self' blob: https://cdn.jsdelivr.net; worker-src 'self' blob:";
+// Keep this in step with netlify.toml (a test checks they match). The sha256 pins the inline import map in the built pages,
+// so run `node build.js` and recompute it if that map ever changes. Stripe's hosts are there for the rent page only.
+const CSP = "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://js.stripe.com https://*.js.stripe.com 'sha256-PJuPofc3VlYWTUNXN9BXKt1IhI2wg5qUvxVGhJE5x5k='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.stripe.com; media-src 'self'; connect-src 'self' blob: https://cdn.jsdelivr.net https://api.stripe.com; frame-src 'self' https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com; worker-src 'self' blob:";
 
 // Only these paths are ever served. Everything else is a 404, including .env and this file.
 // Every page in src/pages is public, plus the search engine files. Pages are reachable at clean addresses too (/machines).
@@ -233,6 +236,89 @@ function handleWaitlist(req, res) {
   });
 }
 
+// ---- QR rental ---------------------------------------------------------------------------------------------------
+// The same handlers Netlify runs, so local testing matches. With SUPPLIER_MODE=fake, RENTAL_STORE=memory and
+// STRIPE_FAKE=yes (all refused on Netlify) the whole flow runs with no accounts, and /__dev/* gives controls to play
+// out a return, a failed release or an offline machine. See README.
+function readRaw(req, limit) {
+  return new Promise((resolve, reject) => {
+    let raw = "", size = 0;
+    req.on("data", (chunk) => { size += chunk.length; if (size > limit) { reject(Object.assign(new Error("too large"), { code: 413 })); req.destroy(); return; } raw += chunk; });
+    req.on("end", () => resolve(raw));
+    req.on("error", reject);
+  });
+}
+function sendResult(res, r) {
+  res.writeHead(r.status, r.headers);
+  res.end(r.body);
+}
+const flat = (searchParams) => Object.fromEntries(searchParams);
+
+async function handleRental(req, res, routePath) {
+  const url = new URL(req.url, "http://localhost");
+  const ip = req.socket.remoteAddress || "unknown";
+  const rt = getRuntime();
+  try {
+    if (routePath.startsWith("/api/rent/")) {
+      let body = null;
+      if (req.method === "POST") {
+        const raw = await readRaw(req, rentalHttp.MAX_JSON);
+        try { body = JSON.parse(raw || "{}"); } catch (e) { return sendResult(res, rentalHttp.json(400, { ok: false, error: "bad_request" })); }
+      }
+      return sendResult(res, await rentalHttp.rentApi(rt, { method: req.method, action: routePath.split("/").pop(), query: flat(url.searchParams), body, ip }));
+    }
+    if (routePath === "/api/stripe/webhook") {
+      const rawBody = req.method === "POST" ? await readRaw(req, rentalHttp.MAX_RAW) : "";
+      return sendResult(res, await rentalHttp.stripeWebhookApi(rt, { method: req.method, rawBody, headers: req.headers }));
+    }
+    if (routePath.startsWith("/api/bajie/callback/")) {
+      const [secret, rentalId] = routePath.split("/").slice(4);
+      const rawBody = req.method === "POST" ? await readRaw(req, 4096) : "";
+      return sendResult(res, await rentalHttp.supplierCallbackApi(rt, { method: req.method, secret, rentalId, rawBody, query: flat(url.searchParams) }));
+    }
+    if (routePath === "/admin" || routePath.startsWith("/admin/")) {
+      return sendResult(res, await rentalHttp.adminApi(rt, { method: req.method, headers: req.headers, ip, render: renderAdmin }));
+    }
+    if (routePath.startsWith("/__dev/") && rt.devMode) return await handleDev(req, res, routePath, url, rt);
+  } catch (e) {
+    if (e && e.code === 413) return sendResult(res, rentalHttp.json(413, { ok: false, error: "too_large" }));
+    console.error("Rental request failed:", e && e.message);
+    return sendResult(res, rentalHttp.json(500, { ok: false, error: "server_error" }));
+  }
+  return notFound(res);
+}
+
+// Local-only controls. They exist only while a fake is active, which the config refuses anywhere hosted.
+async function handleDev(req, res, routePath, url, rt) {
+  const q = flat(url.searchParams);
+  const ok = (obj = {}) => sendResult(res, rentalHttp.json(200, { ok: true, ...obj }));
+  if (routePath === "/__dev/stripe/pay" && rt.fakeStripe) {
+    // The stub Stripe.js calls this when the customer "pays": complete the payment and deliver the signed webhook.
+    const pi = String(q.pi || "");
+    const d = rt.fakeStripe.completePayment(pi, { paymentMethod: q.pm || "pm_card_visa" });
+    const out = await rt.service.handleStripeWebhook(d.body, d.signature);
+    return ok({ webhookStatus: out.status });
+  }
+  if (routePath === "/__dev/stripe/decline" && rt.fakeStripe) { rt.fakeStripe.controls.decline = q.code || null; return ok(); }
+  if (routePath === "/__dev/supplier/machine" && rt.fakeSupplier) {
+    const dev = String(q.deviceId || "");
+    if (q.online !== undefined) rt.fakeSupplier.setOnline(dev, q.online === "1");
+    if (q.neverRelease !== undefined) rt.fakeSupplier.control.neverRelease = q.neverRelease === "1";
+    if (q.charges !== undefined) rt.fakeSupplier.setCharges(dev, q.charges.split(",").map(Number));
+    return ok();
+  }
+  if (routePath === "/__dev/supplier/return" && rt.fakeSupplier) {
+    // minutes = how long the power bank was out, by the machine's own clock.
+    const o = rt.fakeSupplier.orders.get(String(q.tradeNo || ""));
+    if (!o) return sendResult(res, rentalHttp.json(404, { ok: false, error: "no such order" }));
+    rt.fakeSupplier.simulateReturn(o.tradeNo, (o.borrowTime || Date.now()) + Number(q.minutes || 5) * 60000);
+    return ok();
+  }
+  if (routePath === "/__dev/jobs") return ok({ result: await rt.service.runJobs() });
+  if (routePath === "/__dev/rentals" && rt.store) return ok({ rentals: await rt.store.list({ limit: 100 }) });
+  return notFound(res);
+}
+
 function redirect(res, to) {
   res.writeHead(303, { Location: to });
   res.end();
@@ -241,6 +327,7 @@ function redirect(res, to) {
 const server = http.createServer((req, res) => {
   const routePath = req.url.split("?")[0];
   if (routePath === "/api/waitlist") return handleWaitlist(req, res);
+  if (routePath.startsWith("/api/rent/") || routePath === "/api/stripe/webhook" || routePath.startsWith("/api/bajie/callback/") || routePath === "/admin" || routePath.startsWith("/admin/") || routePath.startsWith("/__dev/")) return handleRental(req, res, routePath);
   // Netlify catches a post to "/" in production. Handle it here too so local testing matches.
   if (routePath === "/api/contact" || (req.method === "POST" && (routePath === "/" || routePath === "/thanks.html"))) {
     if (req.method !== "POST") { res.writeHead(405, { Allow: "POST" }); return res.end(); }
@@ -255,5 +342,13 @@ const server = http.createServer((req, res) => {
 
 if (require.main === module) {
   server.listen(PORT, HOST, () => console.log(`Procura site running at http://${HOST}:${PORT}`));
+  // Locally there is no Netlify scheduler, so run the rental job here. Production runs it every minute.
+  const rt = getRuntime();
+  if (rt.ready) {
+    console.log(`Rental: ready (store ${rt.store.kind}, supplier ${rt.supplier.kind}${rt.devMode ? ", local fakes on, controls at /__dev/*" : ""}).`);
+    setInterval(() => rt.service.runJobs().catch((e) => console.error("Rental job failed:", e.message)), Number(process.env.DEV_JOBS_EVERY_MS) || 60000).unref();
+  } else {
+    console.log(`Rental: off (${rt.problems.join("; ") || "setup incomplete"}).`);
+  }
 }
-module.exports = { server, resolvePublic, validate };
+module.exports = { server, resolvePublic, validate, CSP };

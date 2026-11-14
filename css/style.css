@@ -522,3 +522,30 @@ html { overflow-x: clip; }
 .related li:last-child { border-bottom: 1px solid var(--line-light); }
 .related a { display: flex; justify-content: space-between; gap: 12px; padding: 16px 0; text-decoration: none; font-size: 18px; transition: opacity 0.3s; }
 .related a:hover { opacity: 0.6; }
+
+/* ---------- QR rental page ---------- */
+.rent-wrap { max-width: 640px; display: grid; gap: 20px; }
+.rent-form[hidden] { display: none; }
+.rent-price { display: grid; gap: 10px; padding: clamp(20px, 4vw, 32px); border-radius: 24px; background: var(--ink); color: var(--bone); }
+.rent-price .label { color: rgba(237,234,227,0.7); }
+.rent-price__now { margin: 0; font-size: clamp(40px, 11vw, 60px); line-height: 1; letter-spacing: -0.03em; }
+.rent-price__now small { font-size: 16px; letter-spacing: 0; opacity: 0.75; margin-left: 6px; }
+.rent-rules { margin: 4px 0 0; padding-left: 20px; display: grid; gap: 8px; font-size: 15px; color: rgba(237,234,227,0.88); }
+.rent-rules strong { color: #fff; }
+#payment-element { min-height: 56px; }
+#payment-element input[data-test] { width: 100%; padding: 14px; font: inherit; border: 1px solid var(--line-light); border-radius: 10px; background: #fff; }
+.field .rent-consent__row { display: grid; grid-template-columns: 28px 1fr; gap: 12px; align-items: start; text-transform: none; letter-spacing: 0; font-family: inherit; font-size: 15px; line-height: 1.5; color: var(--ink); cursor: pointer; }
+.field .rent-consent__row input[type="checkbox"] { appearance: none; -webkit-appearance: none; width: 26px; height: 26px; margin: 0; padding: 0; border: 2px solid var(--ink); border-radius: 6px; background: #fff; display: grid; place-content: center; cursor: pointer; }
+.field .rent-consent__row input[type="checkbox"]::after { content: ""; width: 12px; height: 6px; border-left: 3px solid #fff; border-bottom: 3px solid #fff; transform: rotate(-45deg) translate(1px, -1px); opacity: 0; }
+.field .rent-consent__row input[type="checkbox"]:checked { background: var(--ink); }
+.field .rent-consent__row input[type="checkbox"]:checked::after { opacity: 1; }
+.field .rent-consent__row input[type="checkbox"]:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.field .rent-consent__row input[type="checkbox"][aria-invalid="true"] { border-color: #9b1c1c; }
+.rent-form .btn { width: 100%; justify-content: center; min-height: 56px; }
+.rent-form .btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+.rent-take { background: var(--ink); color: var(--bone); border-color: var(--ink); }
+.rent-take .label, .rent-take .muted { color: rgba(237,234,227,0.8); }
+.rent-take h2 { color: #fff; }
+.rent-foot { font-size: 14px; }
+.rent-ar { font-size: 18px; line-height: 1.7; text-align: right; }
+.is-bone blockquote { margin: 16px 0; padding: 16px 20px; border-left: 3px solid var(--ink); background: rgba(10,10,10,0.05); border-radius: 0 12px 12px 0; }

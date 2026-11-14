@@ -9,12 +9,19 @@
 //   faq                  true to publish the page's <details> questions as FAQ structured data
 //   article, published   true plus a YYYY-MM-DD date for guides (adds Article structured data)
 //   noindex              keeps the page out of search engines and the sitemap
+//   minimal              header logo only: no menu, dock or call-to-action (the payment page)
 //   three, loader, script  page-specific scripts and effects
 "use strict";
 const fs = require("fs");
 const path = require("path");
 
 const SRC = path.join(__dirname, "src", "pages");
+
+// The rental terms state the real prices. They come from the same settings the server charges from, so the page
+// and the charges cannot drift apart. A bad setting stops the build, so the live site stays on the last good deploy.
+const { loadConfig } = require("./lib/rental/config");
+const { termsTokens } = require("./lib/rental/copy");
+const RENTAL_TOKENS = termsTokens(loadConfig(process.env));
 
 // Live address. Used for canonical links, social previews, structured data and the sitemap.
 const SITE = "https://procuracharge.com";
@@ -252,11 +259,11 @@ ${meta.loader ? `<div class="loader" aria-hidden="true">
 <div class="curtain" aria-hidden="true"></div>
 
 <header class="header">
-  <a class="logo" href="index.html" aria-label="Procura home">PROCURA</a>
+  <a class="logo" href="index.html" aria-label="Procura home">PROCURA</a>${meta.minimal ? "" : `
   <nav class="header__nav" aria-label="Main">${links}</nav>
-  <a class="header__cta" href="contact.html">Free consultation</a>
+  <a class="header__cta" href="contact.html">Free consultation</a>`}
 </header>
-
+${meta.minimal ? "" : `
 <nav class="menu" id="menu" aria-label="Site menu">
   <ol>
       ${menuLinks}
@@ -268,7 +275,7 @@ ${meta.loader ? `<div class="loader" aria-hidden="true">
   <span class="dock__progress" aria-hidden="true">00%</span>
   <a class="dock__cta" href="contact.html">Book a free call</a>
 </div>
-`;
+`}`;
 }
 
 function footer() {
@@ -331,7 +338,10 @@ for (const file of files) {
   meta.url = SITE + urlFor(file);
   if (meta.article && !/^\d{4}-\d{2}-\d{2}$/.test(meta.published || "")) throw new Error(`${file}: "article" needs "published": "YYYY-MM-DD"`);
   if (meta.noindex) hidden.add(file);
-  const body = raw.slice(m[0].length).split("@@ESTIMATOR@@").join(ESTIMATOR).split("@@RELATED@@").join(related(file)).split("@@CTA@@").join(CTA);
+  let body = raw.slice(m[0].length).split("@@ESTIMATOR@@").join(ESTIMATOR).split("@@RELATED@@").join(related(file)).split("@@CTA@@").join(CTA);
+  for (const [token, value] of Object.entries(RENTAL_TOKENS)) body = body.split(token).join(value);
+  const left = body.match(/@@[A-Z_]+@@/);
+  if (left) throw new Error(`${file}: unknown token ${left[0]}`);
   const html = cleanLinks(head(meta, file, body) + "\n" + chrome(file, meta) + '\n<main id="main">\n' + body + "\n</main>\n" + footer() + scripts(meta));
   if (/—|–/.test(html)) throw new Error(`${file}: contains an em or en dash`);
   fs.writeFileSync(path.join(__dirname, file), html);
