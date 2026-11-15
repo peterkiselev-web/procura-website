@@ -64,6 +64,8 @@ test("the rent page states the fee and the cut-off on the page itself, not only 
   // and it sits in the price box, right above the pay buttons.
   assert.match(rent, /data-money-short="pricePerHourPence"/, "the big price is the hourly rate");
   assert.ok(!/capped at/.test(rent), "the price box shows only the hourly rate; the cap is in the consent wording");
+  assert.ok(rent.indexOf('data-i18n="seated"') > 0 && rent.indexOf('data-i18n="seated"') < rent.indexOf("payment-element"), "seated customers are told to call staff before they pay");
+  assert.match(rent, /data-i18n="activeSeated"/, "and that staff bring it once it is out");
   assert.match(rent, /data-text="consentText"/);
   assert.ok(rent.indexOf('data-text="consentText"') < rent.indexOf("payment-element"), "the wording comes before the payment form");
   assert.match(rent, /By paying, you confirm:/, "the consent wording sits right above the payment form");
