@@ -19,7 +19,8 @@
                 box.setAttribute("data-order", (opts && opts.paymentMethodOrder || []).join(","));
                 document.querySelector(sel).appendChild(box);
               },
-              on: function () {},
+              // Like Stripe's form, says when it is ready to take a payment.
+              on: function (name, cb) { if (name === "ready" && typeof cb === "function") setTimeout(cb, 50); },
               destroy: function () { if (box && box.parentNode) box.parentNode.removeChild(box); box = null; },
             };
           },
