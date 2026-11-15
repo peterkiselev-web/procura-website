@@ -67,7 +67,7 @@ With no ClickUp settings the server uses a fake venue: open `http://127.0.0.1:31
 
 A guest scans a QR code on a machine, which opens `/rent?station=AJ1`. They pay 3.00 GBP with Apple Pay, Google Pay or a card (Stripe). The server then asks the machine to release a power bank (Bajie Charging open API), watches for the return, and charges any extra from the saved card, capped. This follows `PROCURA_QR_RENTAL_BUILD_SPEC.pdf`, section by section.
 
-**What has and has not been proven.** Everything below has been run against fakes of Stripe and of the supplier (`lib/rental/stripe-fake.js`, `lib/rental/supplier-fake.js`), in unit tests and in a real browser (`npm test`). Nothing has been run against the real Stripe, the real Bajie API or a real machine, because there are no keys yet. Treat it as built and tested against our understanding of those services, not as known to work with them. The real-machine tests in spec section 11 are the proof. Nothing takes a payment until you have set everything up: with any setting missing the page answers "not configured" and the admin page says what is missing.
+**What has and has not been proven.** Everything below runs against fakes of Stripe and of the supplier (`lib/rental/stripe-fake.js`, `lib/rental/supplier-fake.js`), in unit tests and in a real browser (`npm test`). Against the real services, as of 15 Nov 2026: the live setup is complete; the real Bajie API reports machine AJ1 online with 12 charged power banks; the account may use the order calls (detail and close); and the Stripe sandbox has created and cancelled the first-hour payment (see the setup checks below). A full rental on the real machine (pay, release, return) has not been done yet: the real-machine tests in spec section 11 are the proof. Nothing takes a payment until everything is set up: with any setting missing the page answers "not configured" and the admin page says what is missing.
 
 ### Where things are
 
@@ -85,14 +85,29 @@ A guest scans a QR code on a machine, which opens `/rent?station=AJ1`. They pay 
 
 ### Set it up, in this order
 
-1. **Database.** The existing Supabase project (`qxjpbuomytximctqfhmd`) is **paused**. Restore it in the Supabase dashboard, or create a new one, then run `supabase/migrations/0001_rentals.sql` in its SQL editor. Copy the project URL and the `service_role` key (Project settings, API) into `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. The tables have row level security on and no policies, so the public key cannot read them.
+1. **Database.** The Supabase project `qxjpbuomytximctqfhmd` (restored on 14 Nov 2026, with `0001_rentals.sql` and `0002_lock_down_rentals.sql` applied). For a new project, run both migrations in its SQL editor. Copy the project URL and the `service_role` key (Project settings, API) into `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. The tables have row level security on and no policies, so the public key cannot read them.
 2. **Stripe, test mode first.** Create a new restricted key (not the supplier's full key) with write access to PaymentIntents, SetupIntents, Customers, PaymentMethods and Refunds. Set `STRIPE_SECRET_KEY` and `STRIPE_PUBLISHABLE_KEY` (test values). Add a webhook endpoint for `https://procuracharge.com/api/stripe/webhook` with the events `payment_intent.succeeded` and `charge.dispute.created`, and put its signing secret in `STRIPE_WEBHOOK_SECRET`.
 3. **Apple Pay.** In Stripe (live mode), go to Settings, Payments, Payment method domains, and add `procuracharge.com`. Registering in live mode also covers test mode, and no verification file is needed: Stripe handles Apple's merchant validation. Done on 15 Nov 2026 (Apple Pay and Google Pay show as active). Apple Pay only shows on an iPhone or Mac with a card in Wallet, most reliably in Safari.
 4. **Receipts.** Stripe emails the receipt to the address typed on the page. In test mode Stripe does not send emails. To see them, check them in live mode, or in Stripe Settings, Emails.
 5. **Supplier.** Set `BAJIE_USERNAME`, `BAJIE_PASSWORD`, `BAJIE_BASE_URL`, and **`BAJIE_AUTH_MODE`** (there is deliberately no default, see the open questions). Set `BAJIE_CALLBACK_SECRET_PATH` to a long random string. Set `STATIONS`, for example `AJ1=DTA59552`.
 6. **Site.** Set `SITE_URL=https://procuracharge.com` and `ADMIN_PASSWORD` (12 characters or more). Add the other values from `.env.example` only if you want to change a default.
 7. **Deploy.** Environment variables take effect on the next deploy. The scheduled job only runs on the published production deploy, not on previews. In Netlify, Logs, Functions, `rent-cron` should show a run every minute. If Netlify only allows a coarser schedule, rentals still work, because the page's own status checks move a release along and the job catches the rest, but returns will be noticed later.
-8. **Check** the page at `https://procuracharge.com/rent?station=AJ1` and the admin at `/admin`. Then run the real-machine tests below.
+8. **Check** the page at `https://procuracharge.com/rent?station=AJ1` and the admin at `/admin`, run the setup checks below, then the real-machine tests.
+
+### Setup checks (nothing is charged, nothing is released)
+
+Open these in a browser. Each answers in plain JSON.
+
+| Address | What it proves |
+| --- | --- |
+| `/api/rent/health` | Every setting is present (`"ready": true`), or which are missing |
+| `/api/rent/health?station=AJ1` | The supplier answers, and what it says about the machine: online, signal, each power bank's charge |
+| `...&orders=1` | The supplier account may use the order calls the rentals need (`detail` confirms a release and spots a return). It asks about a made-up order number, so nothing can be released or closed. `"answered": true` with "order does not exist" means allowed |
+| `...&stripe=1` | Stripe accepts the first-hour payment exactly as a customer's phone starts it: it is created with no card and no customer, then cancelled at once. Sandbox keys only; with live keys it does not run |
+
+**Stripe API version.** Every request sends `Stripe-Version: 2026-09-30.endive` (`lib/rental/stripe.js`), so the sandbox and the live account behave the same whatever their own default version is. That version removed `payment_method_types` from Payment Intents; the code uses its replacement, `allowed_payment_method_types`. On 15 Nov 2026 every rental attempt failed with "We couldn't start the payment" because the old parameter was still sent. Before moving to a newer Stripe version, read its breaking changes and run `?stripe=1`. The page loads Stripe.js from `js.stripe.com/v3`, which still accepts `paymentMethodTypes`; a move to a newer Stripe.js needs `allowedPaymentMethodTypes` instead.
+
+**Netlify credits.** Netlify charges credits for each production deploy (15 each), and the free plan's monthly allowance runs out after about 20. When credits run out, previews still build but production silently stops updating. The team moved to the Personal plan on 15 Nov 2026 for this reason. Group changes into fewer merges.
 
 ### Try it locally with no accounts
 
@@ -108,7 +123,7 @@ Open `http://localhost:3000/rent?station=AJ1`. The page uses a stand-in for Stri
 
 `created` (payment started) > `paid` (verified webhook received) > `releasing` (machine asked once) > `active` (supplier confirms a borrow time) > `returned` (supplier shows a return time) > `settled`. Other end states: `release_failed_refunded`, `expired_charged`, `payment_failed`. Two internal states are added so retries are safe: `refunding` and `expired`. One more, `abandoned`, is for a payment that was started and never made.
 
-- The page asks for nothing before paying: no email, no tick box. The payment form opens with Apple Pay first and already selected (Google Pay on Android phones, where Stripe offers it), then card. The consent wording sits directly above it and is recorded with each rental. After the power bank is out, an optional box lets the customer have Stripe email a receipt (the rental's later charges then send receipts too).
+- The page asks for nothing before paying: no email, no tick box. The payment form opens with Apple Pay first and already selected (Google Pay on Android phones, where Stripe offers it), then card. The consent wording sits directly above the pay button and is recorded with each rental; Stripe's own consent paragraphs are hidden (`terms: never`) because ours covers them. The payment page loads only its own script and Stripe.js, with no site animations, fonts or footer links. After the power bank is out, an optional box lets the customer have Stripe email a receipt (the rental's later charges then send receipts too).
 - The page loads Stripe as soon as it opens and fetches the prices while the machine check runs alongside, so the form shows quickly. The server always checks the machine again before it creates a payment.
 - English and Arabic: a switch at the top, the phone's language, or the station setting picks one. Arabic lays the page out right to left, translates every message, shows the consent wording in Arabic (that is what gets recorded), and Stripe's card form follows. To open AJ1 in Arabic by default, set `STATIONS` to `{"AJ1":{"deviceId":"DTA59552","name":"Al Jawhara Garden","lang":"ar"}}`. The Arabic wording was written without a native-speaker review: have one check it, especially the consent sentence. The full terms page is English only.
 - A power bank is released only from the signature-verified `payment_intent.succeeded` webhook, and at most once per rental. The step `paid > releasing` can be won by only one caller, so a repeated webhook, or one sent under a new event id, cannot release twice. If the order result is unknown (a timeout), it is never asked for again: the 60 second rule ends it with a refund.
