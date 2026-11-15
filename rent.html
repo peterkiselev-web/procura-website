@@ -44,10 +44,14 @@
 
 <section class="page-head page-head--compact" data-hero>
   <div class="glow"></div>
-  <div class="wrap">
-    <span class="label" data-hero-fade>Power bank rental</span>
-    <h1 data-split>Rent a power bank</h1>
-    <p class="lede muted" data-hero-fade data-station-line>Checking the machine.</p>
+  <div class="wrap" id="rent-head">
+    <div class="rent-lang" role="group" aria-label="Language">
+      <button type="button" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" data-lang="ar" aria-pressed="false" lang="ar">العربية</button>
+    </div>
+    <span class="label" data-hero-fade data-i18n="heroLabel">Power bank rental</span>
+    <h1 data-i18n="heroTitle">Rent a power bank</h1>
+    <p class="lede muted" data-hero-fade data-station-line data-i18n="checking">Checking the machine.</p>
   </div>
 </section>
 
@@ -55,68 +59,55 @@
   <div class="wrap rent-wrap" id="rent">
 
     <div class="wl-panel" data-state="loading" role="status">
-      <span class="label">One moment</span>
-      <p class="muted">Checking the machine.</p>
+      <span class="label" data-i18n="loadingLabel">One moment</span>
+      <p class="muted" data-i18n="checking">Checking the machine.</p>
     </div>
 
     <div class="wl-panel" data-state="unknown" hidden tabindex="-1">
-      <span class="label">Machine not found</span>
-      <h2>We don't recognise this machine.</h2>
-      <p class="muted">Please scan the QR code on the machine again. You have not been charged.</p>
+      <span class="label" data-i18n="unknownLabel">Machine not found</span>
+      <h2 data-i18n="unknownTitle">We don't recognise this machine.</h2>
+      <p class="muted" data-i18n="unknownText">Please scan the QR code on the machine again. You have not been charged.</p>
     </div>
 
     <div class="wl-panel" data-state="unavailable" hidden tabindex="-1">
-      <span class="label">Temporarily unavailable</span>
-      <h2>This machine can't lend a power bank right now.</h2>
-      <p class="muted">Please try again in a few minutes, or use another machine. You have not been charged.</p>
-      <p class="muted"><button class="btn btn--ghost" type="button" data-action="retry"><span class="btn-text">Check again</span></button></p>
+      <span class="label" data-i18n="unavailableLabel">Temporarily unavailable</span>
+      <h2 data-i18n="unavailableTitle">This machine can't lend a power bank right now.</h2>
+      <p class="muted" data-i18n="unavailableText">Please try again in a few minutes, or use another machine. You have not been charged.</p>
+      <p class="muted"><button class="btn btn--ghost" type="button" data-action="retry"><span class="btn-text" data-i18n="checkAgain">Check again</span></button></p>
     </div>
 
     <div class="wl-panel" data-state="soon" hidden tabindex="-1">
-      <span class="label">Coming soon</span>
-      <h2>Phone payments start soon.</h2>
-      <p>For now, please rent a power bank using the screen on the machine. You have not been charged.</p>
-      <p lang="ar" dir="rtl" class="rent-ar">الدفع بالهاتف قريباً. حالياً، يمكنك استئجار باور بانك من شاشة الجهاز.</p>
+      <span class="label" data-i18n="soonLabel">Coming soon</span>
+      <h2 data-i18n="soonTitle">Phone payments start soon.</h2>
+      <p data-i18n="soonText">For now, please rent a power bank using the screen on the machine. You have not been charged.</p>
+      <p lang="ar" dir="rtl" class="rent-ar" data-i18n="soonExtra">الدفع بالهاتف قريباً. حالياً، يمكنك استئجار باور بانك من شاشة الجهاز.</p>
     </div>
 
     <div class="wl-panel" data-state="error" hidden tabindex="-1">
-      <span class="label">Something went wrong</span>
-      <h2>We couldn't check the machine just now.</h2>
-      <p class="muted">Please refresh the page in a minute. You have not been charged. If it keeps happening, email <a href="mailto:peter@procuracharge.com">peter@procuracharge.com</a>.</p>
+      <span class="label" data-i18n="errorLabel">Something went wrong</span>
+      <h2 data-i18n="errorTitle">We couldn't check the machine just now.</h2>
+      <p class="muted" data-i18n="errorText">Please refresh the page in a minute. You have not been charged. If it keeps happening, email <a href="mailto:peter@procuracharge.com">peter@procuracharge.com</a>.</p>
     </div>
 
     <noscript><p class="muted">This page needs JavaScript to take payment. Please turn it on and reload.</p></noscript>
 
     <form id="rent-form" class="form rent-form" data-state="form" novalidate hidden>
       <div class="rent-price" aria-live="polite">
-        <span class="label">Pay now</span>
-        <p class="rent-price__now"><span data-money="firstChargePence">&nbsp;</span> <small>for the first hour</small></p>
-        <p class="rent-consent-text"><strong>By paying, you confirm:</strong> <span data-text="consentText"></span> <a href="/rental-terms" target="_blank" rel="noopener">Full rental terms</a></p>
-      </div>
-
-      <div class="rent-express" id="express-box">
-        <div id="express-checkout"></div>
-        <p class="hint">One tap, nothing to type. Your receipt goes to the email on your Apple Pay or Google Pay account.</p>
-      </div>
-
-      <div class="form-status" role="status" aria-live="polite"></div>
-
-      <p class="rent-or" id="rent-or"><span>or pay by card</span></p>
-
-      <div class="field">
-        <label for="email">Email for your receipt</label>
-        <input id="email" name="email" type="email" autocomplete="email" inputmode="email" maxlength="160">
-        <span class="err" aria-live="polite"></span>
+        <span class="label" data-i18n="payNow">Pay now</span>
+        <p class="rent-price__now"><span data-money="firstChargePence">&nbsp;</span> <small data-i18n="firstHour">for the first hour</small></p>
+        <p class="rent-consent-text"><strong data-i18n="consentLead">By paying, you confirm:</strong> <span data-text="consentText"></span> <a href="/rental-terms" target="_blank" rel="noopener" data-i18n="termsLink">Full rental terms</a></p>
       </div>
 
       <div class="field">
-        <span class="label" id="pay-label">Card</span>
+        <span class="label" id="pay-label" data-i18n="payWith">Pay with</span>
         <div id="payment-element" aria-labelledby="pay-label"></div>
         <span class="err" id="payment-error" aria-live="polite"></span>
       </div>
 
+      <div class="form-status" role="status" aria-live="polite"></div>
+
       <div>
-        <button class="btn" type="submit" id="pay-button"><span class="btn-text">Pay by card and release a power bank</span> <span class="arrow" aria-hidden="true">&rarr;</span></button>
+        <button class="btn" type="submit" id="pay-button"><span class="btn-text" data-i18n="payButton">Pay and release a power bank</span> <span class="arrow" aria-hidden="true">&rarr;</span></button>
       </div>
     </form>
 
@@ -127,58 +118,74 @@
     </div>
 
     <div class="wl-panel rent-take" data-state="active" hidden tabindex="-1" role="status" aria-live="polite">
-      <span class="label">Ready</span>
-      <h2>Take your power bank</h2>
-      <p>It is out of the machine now. Take it from the open slot.</p>
-      <p class="muted">Return it to the machine within <strong data-text="cutoffLabel"></strong>, by <strong data-text="deadline"></strong>. Each further started hour is <strong data-money="pricePerHourPence"></strong> up to <strong data-money="maxRentPence"></strong> in total, and we take any extra from your saved card when you return it. After the cut-off a <strong data-money="nonReturnFeePence"></strong> fee applies.</p>
-      <p class="muted">You can close this page. Scan the machine's code again at any time to see this page.</p>
+      <span class="label" data-i18n="activeLabel">Ready</span>
+      <h2 data-i18n="activeTitle">Take your power bank</h2>
+      <p data-i18n="activeOut">It is out of the machine now. Take it from the open slot.</p>
+      <p class="muted" data-i18n="activeRules">Return it to the machine within <strong data-text="cutoffLabel"></strong>, by <strong data-text="deadline"></strong>. Each further started hour is <strong data-money="pricePerHourPence"></strong> up to <strong data-money="maxRentPence"></strong> in total, and we take any extra from your saved card when you return it. After the cut-off a <strong data-money="nonReturnFeePence"></strong> fee applies.</p>
+      <p class="muted" data-i18n="activeClose">You can close this page. Scan the machine's code again at any time to see this page.</p>
+      <form class="rent-receipt" novalidate>
+        <label class="rent-receipt__label" data-i18n="receiptLabel">Want a receipt? Add your email and we'll send it. Optional.</label>
+        <div class="rent-receipt__row">
+          <input type="email" name="receipt_email" autocomplete="email" inputmode="email" maxlength="160" aria-label="Email for your receipt">
+          <button class="btn btn--ghost" type="submit"><span class="btn-text" data-i18n="receiptSend">Send</span></button>
+        </div>
+        <span class="rent-receipt__status" aria-live="polite"></span>
+      </form>
     </div>
 
     <div class="wl-panel" data-state="returned" hidden tabindex="-1">
-      <span class="label">Returned</span>
-      <h2>Thanks, you're all done.</h2>
-      <p>Your total for this rental is <strong data-text="total"></strong>. Stripe emails you a receipt.</p>
-      <p class="muted"><button class="btn btn--ghost" type="button" data-action="again"><span class="btn-text">Rent another</span></button></p>
+      <span class="label" data-i18n="returnedLabel">Returned</span>
+      <h2 data-i18n="returnedTitle">Thanks, you're all done.</h2>
+      <p data-i18n="returnedText">Your total for this rental is <strong data-text="total"></strong>.</p>
+      <form class="rent-receipt" novalidate>
+        <label class="rent-receipt__label" data-i18n="receiptLabel">Want a receipt? Add your email and we'll send it. Optional.</label>
+        <div class="rent-receipt__row">
+          <input type="email" name="receipt_email" autocomplete="email" inputmode="email" maxlength="160" aria-label="Email for your receipt">
+          <button class="btn btn--ghost" type="submit"><span class="btn-text" data-i18n="receiptSend">Send</span></button>
+        </div>
+        <span class="rent-receipt__status" aria-live="polite"></span>
+      </form>
+      <p class="muted"><button class="btn btn--ghost" type="button" data-action="again"><span class="btn-text" data-i18n="rentAnother">Rent another</span></button></p>
     </div>
 
     <div class="wl-panel" data-state="refunded" hidden tabindex="-1">
-      <span class="label">Refunded</span>
-      <h2>We couldn't release a power bank.</h2>
-      <p>Your <strong data-text="refunded"></strong> has been refunded in full. It can take 5 to 10 working days to show on your statement. You have not been charged anything else.</p>
-      <p class="muted"><button class="btn btn--ghost" type="button" data-action="again"><span class="btn-text">Try again</span></button></p>
+      <span class="label" data-i18n="refundedLabel">Refunded</span>
+      <h2 data-i18n="noReleaseTitle">We couldn't release a power bank.</h2>
+      <p data-i18n="refundedText">Your <strong data-text="refunded"></strong> has been refunded in full. It can take 5 to 10 working days to show on your statement. You have not been charged anything else.</p>
+      <p class="muted"><button class="btn btn--ghost" type="button" data-action="again"><span class="btn-text" data-i18n="tryAgain">Try again</span></button></p>
     </div>
 
     <div class="wl-panel" data-state="refunding" hidden tabindex="-1" role="status" aria-live="polite">
-      <span class="label">Refunding</span>
-      <h2>We couldn't release a power bank.</h2>
-      <p>We are refunding your payment now. This page will update when it is done. You have not been charged anything else.</p>
+      <span class="label" data-i18n="refundingLabel">Refunding</span>
+      <h2 data-i18n="noReleaseTitle">We couldn't release a power bank.</h2>
+      <p data-i18n="refundingText">We are refunding your payment now. This page will update when it is done. You have not been charged anything else.</p>
     </div>
 
     <div class="wl-panel" data-state="expired" hidden tabindex="-1">
-      <span class="label">Not returned in time</span>
-      <h2>The cut-off has passed.</h2>
-      <p>The power bank wasn't returned within <strong data-text="cutoffLabel"></strong>, so we charged the rent owed and the non-return fee. Your total is <strong data-text="total"></strong>. Nothing more will be charged. Stripe emails you a receipt.</p>
+      <span class="label" data-i18n="lateLabel">Not returned in time</span>
+      <h2 data-i18n="lateTitle">The cut-off has passed.</h2>
+      <p data-i18n="expiredText">The power bank wasn't returned within <strong data-text="cutoffLabel"></strong>, so we charged the rent owed and the non-return fee. Your total is <strong data-text="total"></strong>. Nothing more will be charged.</p>
     </div>
 
     <div class="wl-panel" data-state="returned_unpaid" hidden tabindex="-1">
-      <span class="label">Returned</span>
-      <h2>Thanks for returning it.</h2>
-      <p>We couldn't take the last <strong data-text="due"></strong> from your card. Please email <a href="mailto:peter@procuracharge.com">peter@procuracharge.com</a> and we will sort it out.</p>
+      <span class="label" data-i18n="returnedLabel">Returned</span>
+      <h2 data-i18n="thanksReturn">Thanks for returning it.</h2>
+      <p data-i18n="returnedUnpaidText">We couldn't take the last <strong data-text="due"></strong> from your card. Please email <a href="mailto:peter@procuracharge.com">peter@procuracharge.com</a> and we will sort it out.</p>
     </div>
 
     <div class="wl-panel" data-state="expired_unpaid" hidden tabindex="-1">
-      <span class="label">Not returned in time</span>
-      <h2>The cut-off has passed.</h2>
-      <p>The power bank wasn't returned within <strong data-text="cutoffLabel"></strong> and we couldn't take the <strong data-text="due"></strong> owed from your card. Please email <a href="mailto:peter@procuracharge.com">peter@procuracharge.com</a>.</p>
+      <span class="label" data-i18n="lateLabel">Not returned in time</span>
+      <h2 data-i18n="lateTitle">The cut-off has passed.</h2>
+      <p data-i18n="expiredUnpaidText">The power bank wasn't returned within <strong data-text="cutoffLabel"></strong> and we couldn't take the <strong data-text="due"></strong> owed from your card. Please email <a href="mailto:peter@procuracharge.com">peter@procuracharge.com</a>.</p>
     </div>
 
     <div class="wl-panel" data-state="closed" hidden tabindex="-1">
-      <span class="label">Finished</span>
-      <h2>This rental has ended.</h2>
-      <p class="muted"><button class="btn btn--ghost" type="button" data-action="again"><span class="btn-text">Rent a power bank</span></button></p>
+      <span class="label" data-i18n="closedLabel">Finished</span>
+      <h2 data-i18n="closedTitle">This rental has ended.</h2>
+      <p class="muted"><button class="btn btn--ghost" type="button" data-action="again"><span class="btn-text" data-i18n="rentOne">Rent a power bank</span></button></p>
     </div>
 
-    <p class="rent-foot muted">Operated by JUKIE Experiences Ltd, trading as Procura. <a href="/rental-terms">Rental terms</a> and <a href="/privacy">privacy notice</a>.</p>
+    <p class="rent-foot muted" data-i18n="foot">Operated by JUKIE Experiences Ltd, trading as Procura. <a href="/rental-terms">Rental terms</a> and <a href="/privacy">privacy notice</a>.</p>
   </div>
 </section>
 

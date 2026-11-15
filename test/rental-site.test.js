@@ -64,10 +64,10 @@ test("the rent page states the fee and the cut-off on the page itself, not only 
   // and it sits in the price box, right above the pay buttons.
   assert.match(rent, /data-money="firstChargePence"/);
   assert.match(rent, /data-text="consentText"/);
-  assert.ok(rent.indexOf('data-text="consentText"') < rent.indexOf("express-checkout"), "the wording comes before the buttons");
-  assert.match(rent, /By paying, you confirm:/, "the consent wording sits right above the pay buttons");
-  assert.match(rent, /id="express-checkout"/, "Apple Pay and Google Pay come first");
-  assert.ok(rent.indexOf("express-checkout") < rent.indexOf("payment-element"), "wallets above the card form");
+  assert.ok(rent.indexOf('data-text="consentText"') < rent.indexOf("payment-element"), "the wording comes before the payment form");
+  assert.match(rent, /By paying, you confirm:/, "the consent wording sits right above the payment form");
+  assert.ok(!/id="rent-form"[\s\S]*type="email"[\s\S]*id="pay-button"/.test(rent), "no email to type before paying");
+  assert.match(rent, /data-lang="ar"/, "an Arabic switch");
   assert.match(rent, /href="\/rental-terms"/);
 });
 
@@ -102,7 +102,9 @@ test("the page never trusts itself to release anything: the script has no way to
 
 test("the local Stripe stand-in is hidden on the live site, and only loaded when the server says its fake is on", () => {
   assert.match(toml, /from = "\/js\/dev-stripe\.js"/);
-  assert.match(read("js/rent.js"), /station_\.devStripe \? "\/js\/dev-stripe\.js" : "https:\/\/js\.stripe\.com\/v3"/);
+  const js = read("js/rent.js");
+  assert.match(js, /station_\.devStripe \? loadScript\("\/js\/dev-stripe\.js"\) : \(stripeJs \|\| loadScript\("https:\/\/js\.stripe\.com\/v3"\)\)/);
+  assert.match(js, /var stripeJs = isLocal \? null : loadScript\("https:\/\/js\.stripe\.com\/v3"\)/, "the real Stripe.js loads early everywhere but a developer's own machine");
 });
 
 test("nothing new uses an em or en dash", () => {
