@@ -76,6 +76,8 @@ test("the rent page works end to end in a browser", { skip: !chromium && "Playwr
     assert.equal(await page.locator('[data-test="card"]').getAttribute("data-order"), "apple_pay,google_pay,card", "Apple Pay comes first and is selected");
     assert.equal(await page.locator('[data-test="card"]').getAttribute("data-terms"), "never", "Stripe's duplicate future-payments paragraph is hidden; ours is on the page");
     assert.equal((await page.locator("#pay-button").textContent()).replace(/\s+/g, " ").trim(), "Pay £3 and get a power bank →", "the button says what is taken now");
+    // The button switches on when Stripe's form says it is ready; the placeholder goes at the same moment.
+    await page.waitForFunction(() => !document.getElementById("pay-button").disabled, null, { timeout: 5000 });
     assert.equal(await page.locator("[data-pay-skeleton]").isHidden(), true, "the placeholder goes once Stripe's form is ready");
     assert.deepEqual(errors, []);
   });
