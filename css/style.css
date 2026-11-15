@@ -534,13 +534,19 @@ html { overflow-x: clip; }
 .rent-rules strong { color: #fff; }
 #payment-element { min-height: 56px; }
 #payment-element input[data-test] { width: 100%; padding: 14px; font: inherit; border: 1px solid var(--line-light); border-radius: 10px; background: #fff; }
-.field .rent-consent__row { display: grid; grid-template-columns: 28px 1fr; gap: 12px; align-items: start; text-transform: none; letter-spacing: 0; font-family: inherit; font-size: 15px; line-height: 1.5; color: var(--ink); cursor: pointer; }
-.field .rent-consent__row input[type="checkbox"] { appearance: none; -webkit-appearance: none; width: 26px; height: 26px; margin: 0; padding: 0; border: 2px solid var(--ink); border-radius: 6px; background: #fff; display: grid; place-content: center; cursor: pointer; }
-.field .rent-consent__row input[type="checkbox"]::after { content: ""; width: 12px; height: 6px; border-left: 3px solid #fff; border-bottom: 3px solid #fff; transform: rotate(-45deg) translate(1px, -1px); opacity: 0; }
-.field .rent-consent__row input[type="checkbox"]:checked { background: var(--ink); }
-.field .rent-consent__row input[type="checkbox"]:checked::after { opacity: 1; }
-.field .rent-consent__row input[type="checkbox"]:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
-.field .rent-consent__row input[type="checkbox"][aria-invalid="true"] { border-color: #9b1c1c; }
+.rent-consent-text { margin: 0; font-size: 14px; line-height: 1.55; color: rgba(237,234,227,0.86); }
+.rent-consent-text strong { color: #fff; }
+.rent-consent-text a { white-space: nowrap; color: #fff; }
+.page-head--compact { padding: 104px 0 18px; }
+.page-head--compact h1 { font-size: clamp(38px, 10vw, 72px); }
+.page-head--compact .lede { margin-top: 6px; }
+.page-head--compact + .section--tight { padding-top: 20px; }
+.rent-express { display: grid; gap: 10px; }
+.rent-express[hidden], .rent-or[hidden] { display: none; }
+#express-checkout { min-height: 54px; }
+.rent-express .hint { margin: 0; font-size: 14px; color: var(--muted-light); }
+.rent-or { display: flex; align-items: center; gap: 14px; margin: 4px 0; font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted-light); }
+.rent-or::before, .rent-or::after { content: ""; flex: 1; height: 1px; background: var(--line-light); }
 .rent-form .btn { width: 100%; justify-content: center; min-height: 56px; }
 .rent-form .btn[disabled] { opacity: 0.45; cursor: not-allowed; }
 .rent-take { background: var(--ink); color: var(--bone); border-color: var(--ink); }

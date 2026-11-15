@@ -60,11 +60,14 @@ test("the rent page: noindex, not in the sitemap, not linked from anywhere else,
 
 test("the rent page states the fee and the cut-off on the page itself, not only in the terms", () => {
   const rent = read("rent.html");
-  assert.match(rent, /data-money="nonReturnFeePence"/);
-  assert.match(rent, /data-text="cutoffLabel"/);
-  assert.match(rent, /data-money="maxTotalPence"/);
+  // The consent wording states the price per hour, the cap, the 12 hour cut-off, the fee and the maximum (see copy.js),
+  // and it sits in the price box, right above the pay buttons.
+  assert.match(rent, /data-money="firstChargePence"/);
   assert.match(rent, /data-text="consentText"/);
-  assert.match(rent, /id="consent"[^>]*required/);
+  assert.ok(rent.indexOf('data-text="consentText"') < rent.indexOf("express-checkout"), "the wording comes before the buttons");
+  assert.match(rent, /By paying, you confirm:/, "the consent wording sits right above the pay buttons");
+  assert.match(rent, /id="express-checkout"/, "Apple Pay and Google Pay come first");
+  assert.ok(rent.indexOf("express-checkout") < rent.indexOf("payment-element"), "wallets above the card form");
   assert.match(rent, /href="\/rental-terms"/);
 });
 

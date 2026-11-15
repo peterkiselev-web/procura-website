@@ -42,12 +42,17 @@ test("spec 11.3: no payment can be started while the machine is switched off", a
   assert.equal((await h.store.list()).length, 0);
 });
 
-test("start needs an email and the exact consent that was shown", async () => {
+test("start checks the email if one is given, and needs the exact consent that was shown", async () => {
   const h = setup();
   assert.equal((await h.start({ email: "nope" })).json.error, "bad_email");
+  // No email at all is allowed (a wallet that shares none): the rental just has no receipt address.
+  const noEmail = await h.start({ email: "" });
+  assert.equal(noEmail.status, 200);
+  assert.equal((await h.store.get(noEmail.json.rentalId)).email, null);
+  const pi = h.fakeStripe.state.calls.filter((c) => c.path === "/v1/payment_intents").pop();
+  assert.equal(pi.params.receipt_email, undefined, "no empty receipt address is sent to Stripe");
   assert.equal((await h.start({ consent: false })).json.error, "consent_required");
   assert.equal((await h.start({ consentVersion: "old" })).json.error, "terms_changed");
-  assert.equal(h.fakeStripe.state.intents.size, 0);
 });
 
 test("start creates a 3.00 GBP payment that saves the card, on a customer, with the consent recorded", async () => {
