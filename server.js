@@ -21,8 +21,9 @@ const LOG_FILE = path.join(ROOT, "data", "enquiries.log");
 const MAX_BODY = 20 * 1024;
 
 // Keep this in step with netlify.toml (a test checks they match). The sha256 pins the inline import map in the built pages,
-// so run `node build.js` and recompute it if that map ever changes. Stripe's hosts are there for the rent page only.
-const CSP = "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://js.stripe.com https://*.js.stripe.com 'sha256-PJuPofc3VlYWTUNXN9BXKt1IhI2wg5qUvxVGhJE5x5k='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.stripe.com; media-src 'self'; connect-src 'self' blob: https://cdn.jsdelivr.net https://api.stripe.com; frame-src 'self' https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com; worker-src 'self' blob:";
+// so run `node build.js` and recompute it if that map ever changes. Stripe's hosts (and link.com, Stripe's Link wallet,
+// which Stripe can show inside the card form) are there for the rent page only.
+const CSP = "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://js.stripe.com https://*.js.stripe.com 'sha256-PJuPofc3VlYWTUNXN9BXKt1IhI2wg5qUvxVGhJE5x5k='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.stripe.com https://*.link.com; media-src 'self'; connect-src 'self' blob: https://cdn.jsdelivr.net https://api.stripe.com https://link.com https://*.link.com; frame-src 'self' https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com https://link.com https://*.link.com; worker-src 'self' blob:";
 
 // Only these paths are ever served. Everything else is a 404, including .env and this file.
 // Every page in src/pages is public, plus the search engine files. Pages are reachable at clean addresses too (/machines).

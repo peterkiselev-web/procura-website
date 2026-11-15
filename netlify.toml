@@ -27,7 +27,7 @@
     Permissions-Policy = "geolocation=(), microphone=(), camera=(), payment=(self \"https://js.stripe.com\" \"https://*.js.stripe.com\")"
     Cross-Origin-Opener-Policy = "same-origin-allow-popups"
     X-Permitted-Cross-Domain-Policies = "none"
-    Content-Security-Policy = "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://js.stripe.com https://*.js.stripe.com 'sha256-PJuPofc3VlYWTUNXN9BXKt1IhI2wg5qUvxVGhJE5x5k='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.stripe.com; media-src 'self'; connect-src 'self' blob: https://cdn.jsdelivr.net https://api.stripe.com; frame-src 'self' https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com; worker-src 'self' blob:"
+    Content-Security-Policy = "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://js.stripe.com https://*.js.stripe.com 'sha256-PJuPofc3VlYWTUNXN9BXKt1IhI2wg5qUvxVGhJE5x5k='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.stripe.com https://*.link.com; media-src 'self'; connect-src 'self' blob: https://cdn.jsdelivr.net https://api.stripe.com https://link.com https://*.link.com; frame-src 'self' https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com https://link.com https://*.link.com; worker-src 'self' blob:"
 
 # The waitlist page is private to invited venues: keep it out of search and out of caches.
 [[headers]]
