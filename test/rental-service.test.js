@@ -611,3 +611,72 @@ test("a charge on a card with no saved payment method fails closed instead of gu
   assert.equal(row.status, S.PAYMENT_FAILED);
   assert.ok(row.flags.includes("no_saved_card"));
 });
+
+test("Arabic: the station offers the consent in Arabic, and a rental started in Arabic records the Arabic wording", async () => {
+  const h = setup();
+  const st = (await h.service.getStation("AJ1")).json;
+  assert.match(st.consentAr.text, /^أوافق على شروط الإيجار/);
+  assert.match(st.consentAr.text, /12 ساعة/);
+  assert.match(st.consentAr.text, /£20\.00/);
+  assert.notEqual(st.consentAr.version, st.consent.version);
+  // The English version number does not pass for the Arabic wording, and the other way round.
+  assert.equal((await h.start({ lang: "ar" })).json.error, "terms_changed");
+  const out = await h.start({ lang: "ar", consentVersion: st.consentAr.version });
+  assert.equal(out.status, 200);
+  assert.equal((await h.store.get(out.json.rentalId)).consent_text, st.consentAr.text);
+  // Station language setting.
+  const h2 = setup({ STATIONS: '{"AJ1":{"deviceId":"DTA59552","name":"Al Jawhara Garden","lang":"ar"}}' });
+  const st2 = (await h2.service.getStation("AJ1")).json;
+  assert.equal(st2.station.lang, "ar");
+  assert.equal(st2.station.name, "Al Jawhara Garden");
+});
+
+test("the quick station request skips the machine check, and starting always checks the machine", async () => {
+  const h = setup();
+  h.supplier.setOnline("DTA59552", false);
+  const quick = (await h.service.getStation("AJ1", { check: false })).json;
+  assert.equal(quick.available, null, "not checked");
+  assert.equal(h.supplier.log.filter((l) => l[0] === "checkCabinet").length, 0, "the supplier was not asked");
+  assert.equal((await h.service.getStation("AJ1")).json.available, false, "the full request does check");
+  assert.equal((await h.start()).json.error, "unavailable", "and no payment can start on an offline machine");
+});
+
+test("optional receipt: saves the email, updates the customer, and has Stripe email the receipt for each charge", async () => {
+  const h = setup();
+  const r = await h.rentUntilActive();
+  assert.equal((await h.store.get(r.rentalId)).email, "sam@example.com"); // the harness starts with one
+  assert.equal((await h.service.sendReceipt({ id: r.rentalId, token: "wrong", email: "a@b.co" })).status, 404);
+  assert.equal((await h.service.sendReceipt({ id: r.rentalId, token: r.token, email: "nope" })).status, 400);
+  const ok = await h.service.sendReceipt({ id: r.rentalId, token: r.token, email: "new@example.com" });
+  assert.equal(ok.status, 200);
+  assert.equal((await h.store.get(r.rentalId)).email, "new@example.com");
+  const pi = h.fakeStripe.state.intents.get(r.piId);
+  assert.equal(h.fakeStripe.state.customers.get(pi.customer).email, "new@example.com");
+  const charge = h.fakeStripe.state.charges.get(pi.latest_charge);
+  assert.equal(charge.receipt_email, "new@example.com");
+  assert.equal(charge.receipts_sent, 1);
+  // A later charge on the rental goes to the new address too, and asking again covers it.
+  h.advance(2 * HOUR);
+  h.supplier.simulateReturn(r.row.trade_no, h.clock.t);
+  await h.service.pollActive(await h.store.get(r.rentalId));
+  const settled = await h.store.get(r.rentalId);
+  assert.equal(h.fakeStripe.state.intents.get(settled.settle_pi_id).receipt_email, "new@example.com");
+  await h.service.sendReceipt({ id: r.rentalId, token: r.token, email: "new@example.com" });
+  const extra = h.fakeStripe.state.charges.get(h.fakeStripe.state.intents.get(settled.settle_pi_id).latest_charge);
+  assert.equal(extra.receipts_sent, 1);
+});
+
+test("a rental with no email at all works end to end (no receipt address is ever sent to Stripe)", async () => {
+  const h = setup();
+  const s = await h.start({ email: undefined });
+  const row = await h.store.get(s.json.rentalId);
+  assert.equal(row.email, null);
+  await h.pay(row.stripe_payment_intent_id);
+  await h.service.refreshRelease(await h.store.get(row.id));
+  h.advance(2 * HOUR);
+  h.supplier.simulateReturn((await h.store.get(row.id)).trade_no, h.clock.t);
+  await h.service.pollActive(await h.store.get(row.id));
+  assert.equal((await h.store.get(row.id)).status, "settled");
+  const charge = h.fakeStripe.state.calls.find((c) => c.params.off_session === "true");
+  assert.equal(charge.params.receipt_email, undefined);
+});
