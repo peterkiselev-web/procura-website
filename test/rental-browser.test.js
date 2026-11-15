@@ -67,6 +67,7 @@ test("the rent page works end to end in a browser", { skip: !chromium && "Playwr
     await page.goto(`${BASE}/rent?station=AJ1`);
     await page.waitForSelector("#rent-form:not([hidden])");
     const text = await page.locator("#rent-form").innerText();
+    assert.equal((await page.locator(".rent-price__now").textContent()).replace(/\s+/g, " ").trim(), "£3 per hour", "one big price, nothing else");
     assert.match(text, /£3\.00/);
     assert.match(text, /12 hours/);
     assert.match(text, /£20\.00 non-return fee/);
@@ -146,6 +147,7 @@ test("the rent page works end to end in a browser", { skip: !chromium && "Playwr
     assert.equal(await page.locator("#rent").getAttribute("dir"), "rtl");
     assert.equal(await page.locator("#rent-head h1").innerText(), "استأجر باور بانك");
     const formText = await page.locator("#rent-form").innerText();
+    assert.equal((await page.locator(".rent-price__now").textContent()).replace(/\s+/g, " ").trim(), "£3 لكل ساعة");
     assert.match(formText, /أوافق على شروط الإيجار/);
     assert.match(formText, /12 ساعة/);
     assert.match(formText, /£20\.00/);
