@@ -17,7 +17,7 @@
   var form = document.getElementById("rent-form");
   var payButton = document.getElementById("pay-button");
   var statusBox = $(".form-status", form);
-  var station_ = null, stripe = null, cardElements = null, expressElements = null, current = null, pollTimer = null, lastState = null, waitStarted = 0;
+  var station_ = null, stripe = null, cardElements = null, expressElements = null, cardEl = null, walletsSeen = false, walletFallback = false, current = null, pollTimer = null, lastState = null, waitStarted = 0;
 
   // ---- small helpers --------------------------------------------------------------------------------------------
   var money = function (pence) { return "£" + (Number(pence || 0) / 100).toFixed(2); };
@@ -161,16 +161,43 @@
     var src = station_.devStripe ? "/js/dev-stripe.js" : "https://js.stripe.com/v3";
     return loadScript(src).then(function () {
       stripe = window.Stripe(station_.publishableKey);
-      // 1. Apple Pay or Google Pay: one big button at the top. The wallet supplies the email, so there is nothing to type.
-      try { startExpress(); } catch (e) { /* the card form below still works */ }
-      // 2. Card, for everyone else. Wallets are left to the button above so they do not show twice.
+      // 2. Card form. Wallets are left to the one-tap button above, unless that button cannot show (see below).
       cardElements = stripe.elements(elementsOptions());
-      var el;
-      try { el = cardElements.create("payment", { layout: "tabs", wallets: { applePay: "never", googlePay: "never" } }); }
-      catch (e) { el = cardElements.create("payment", { layout: "tabs" }); }
-      el.mount("#payment-element");
-      el.on && el.on("change", function () { var pe = document.getElementById("payment-error"); if (pe) pe.textContent = ""; });
+      mountCardForm(false);
+      // 1. Apple Pay or Google Pay: one big button at the top. The wallet supplies the email, so there is nothing to type.
+      try { startExpress(); } catch (e) { useWalletsInCardForm(); }
     });
+  }
+
+  function mountCardForm(withWallets) {
+    if (cardEl && cardEl.destroy) cardEl.destroy();
+    var opts = withWallets
+      ? { layout: "tabs", paymentMethodOrder: ["apple_pay", "google_pay", "card"] } // Apple Pay first and pre-selected
+      : { layout: "tabs", wallets: { applePay: "never", googlePay: "never" } };
+    try { cardEl = cardElements.create("payment", opts); } catch (e) { cardEl = cardElements.create("payment", { layout: "tabs" }); }
+    cardEl.mount("#payment-element");
+    if (cardEl.on) cardEl.on("change", function () { var pe = document.getElementById("payment-error"); if (pe) pe.textContent = ""; });
+  }
+
+  // Safety net: if the one-tap button cannot show, put Apple Pay and Google Pay back inside the payment form, first.
+  function useWalletsInCardForm() {
+    if (walletFallback || walletsSeen) return;
+    walletFallback = true;
+    $("#express-box").hidden = true;
+    $("#rent-or").hidden = true;
+    $("#pay-label").textContent = "Pay with";
+    mountCardForm(true);
+  }
+
+  function walletsReported(methods, final) {
+    var any = !!methods && Object.keys(methods).some(function (k) { return methods[k]; });
+    if (any) {
+      walletsSeen = true;
+      if (!walletFallback) { $("#express-box").hidden = false; $("#rent-or").hidden = false; }
+      return;
+    }
+    // Stripe can report the buttons a moment after it says it is ready, so give it time before falling back.
+    if (final) setTimeout(function () { if (!walletsSeen) useWalletsInCardForm(); }, 2500);
   }
 
   function startExpress() {
@@ -186,17 +213,17 @@
     var ece;
     try { ece = expressElements.create("expressCheckout", opts); }
     catch (e) { ece = expressElements.create("expressCheckout", { emailRequired: true }); }
-    ece.on("ready", function (ev) {
-      var methods = (ev && ev.availablePaymentMethods) || {};
-      var any = Object.keys(methods).some(function (k) { return methods[k]; });
-      $("#express-box").hidden = !any;
-      $("#rent-or").hidden = !any;
-    });
+    // The box stays visible while Stripe works out which buttons to show: Stripe cannot lay out buttons in a hidden box.
+    ece.on("ready", function (ev) { walletsReported(ev && ev.availablePaymentMethods, true); });
+    ece.on("availablepaymentmethodschange", function (ev) { walletsReported(ev && ev.paymentMethods, false); });
+    ece.on("loaderror", function () { useWalletsInCardForm(); });
     ece.on("click", function (ev) { clearSay(); ev.resolve(); });
     ece.on("confirm", function (ev) {
       pay(expressElements, (ev.billingDetails && ev.billingDetails.email) || "", ev);
     });
     ece.mount("#express-checkout");
+    // If Stripe never says anything (blocked or failed), do not leave an empty space.
+    setTimeout(function () { if (!walletsSeen) useWalletsInCardForm(); }, 8000);
   }
 
   $("#email", form).addEventListener("input", function (e) { if (e.target.getAttribute("aria-invalid") === "true") setErr(e.target, ""); });

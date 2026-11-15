@@ -152,6 +152,18 @@ test("the rent page works end to end in a browser", { skip: !chromium && "Playwr
     await post(`/__dev/supplier/return?tradeNo=${mine.trade_no}&minutes=5`);
   });
 
+  await t.test("on a phone with no wallet button, the payment form takes over (Apple Pay first if available)", async () => {
+    const { page, errors } = await newPage();
+    await page.addInitScript(() => { window.__devNoWallets = true; });
+    await page.goto(`${BASE}/rent?station=AJ1`);
+    await page.waitForSelector("#rent-form:not([hidden])");
+    await page.waitForFunction(() => document.getElementById("express-box").hidden === true, null, { timeout: 8000 });
+    assert.equal(await page.locator("#rent-or").isHidden(), true);
+    assert.equal(await page.locator("#pay-label").textContent(), "Pay with");
+    assert.equal(await page.locator('[data-test="card"]').count(), 1, "the payment form is there, once");
+    assert.deepEqual(errors, []);
+  });
+
   await t.test("if the machine never releases, the customer sees the automatic refund", async () => {
     const { page } = await newPage();
     await post("/__dev/supplier/machine?deviceId=DTA59552&neverRelease=1");

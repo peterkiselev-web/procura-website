@@ -30,7 +30,9 @@
                     });
                   });
                   document.querySelector(sel).appendChild(b);
-                  setTimeout(function () { if (handlers.ready) handlers.ready({ availablePaymentMethods: { applePay: true, googlePay: false } }); }, 0);
+                  var none = window.__devNoWallets === true; // tests use this to play a phone with no wallet
+                  if (none) b.style.display = "none";
+                  setTimeout(function () { if (handlers.ready) handlers.ready({ availablePaymentMethods: none ? undefined : { applePay: true, googlePay: false } }); }, 0);
                 },
               };
             }
@@ -41,6 +43,8 @@
                 document.querySelector(sel).appendChild(box);
               },
               on: function () {},
+              destroy: function () { if (box && box.parentNode) box.parentNode.removeChild(box); box = null; },
+              _opts: opts,
             };
           },
           submit: function () { return Promise.resolve(express || (box && box.value.trim()) ? {} : { error: { message: "Enter a card number." } }); },
