@@ -17,7 +17,7 @@
   var form = document.getElementById("rent-form");
   var payButton = document.getElementById("pay-button");
   var statusBox = $(".form-status", form);
-  var station_ = null, stripe = null, elements = null, current = null, pollTimer = null, lastState = null, waitStarted = 0;
+  var station_ = null, stripe = null, cardElements = null, expressElements = null, current = null, pollTimer = null, lastState = null, waitStarted = 0;
 
   // ---- small helpers --------------------------------------------------------------------------------------------
   var money = function (pence) { return "£" + (Number(pence || 0) / 100).toFixed(2); };
@@ -146,78 +146,119 @@
     });
   }
 
+  function elementsOptions() {
+    return {
+      mode: "payment", amount: station_.pricing.firstChargePence, currency: station_.pricing.currency,
+      setupFutureUsage: "off_session", paymentMethodTypes: ["card"],
+      appearance: { theme: "stripe", variables: { colorPrimary: "#0a0a0a", fontFamily: "system-ui, sans-serif", borderRadius: "10px" } },
+    };
+  }
+
   function startStripe() {
-    if (elements) return Promise.resolve();
+    if (cardElements) return Promise.resolve();
     // Stripe.js must come from js.stripe.com. Only the local test setup swaps in a stand-in, and the server only
     // says so when its fake Stripe is on, which it refuses on the live site.
     var src = station_.devStripe ? "/js/dev-stripe.js" : "https://js.stripe.com/v3";
     return loadScript(src).then(function () {
       stripe = window.Stripe(station_.publishableKey);
-      elements = stripe.elements({
-        mode: "payment", amount: station_.pricing.firstChargePence, currency: station_.pricing.currency,
-        setupFutureUsage: "off_session", paymentMethodTypes: ["card"],
-        appearance: { theme: "stripe", variables: { colorPrimary: "#0a0a0a", fontFamily: "system-ui, sans-serif", borderRadius: "10px" } },
-      });
-      var opts = { layout: "tabs" };
-      if (station_.applePayOptions) opts.applePay = station_.applePayOptions; // optional, from config
+      // 1. Apple Pay or Google Pay: one big button at the top. The wallet supplies the email, so there is nothing to type.
+      try { startExpress(); } catch (e) { /* the card form below still works */ }
+      // 2. Card, for everyone else. Wallets are left to the button above so they do not show twice.
+      cardElements = stripe.elements(elementsOptions());
       var el;
-      try { el = elements.create("payment", opts); } catch (e) { el = elements.create("payment", { layout: "tabs" }); }
+      try { el = cardElements.create("payment", { layout: "tabs", wallets: { applePay: "never", googlePay: "never" } }); }
+      catch (e) { el = cardElements.create("payment", { layout: "tabs" }); }
       el.mount("#payment-element");
       el.on && el.on("change", function () { var pe = document.getElementById("payment-error"); if (pe) pe.textContent = ""; });
     });
   }
 
-  function updatePayButton() { payButton.disabled = !$("#consent", form).checked; }
-  $("#consent", form).addEventListener("change", updatePayButton);
+  function startExpress() {
+    expressElements = stripe.elements(elementsOptions());
+    var opts = {
+      emailRequired: true, // Apple Pay and Google Pay only share the email when asked
+      lineItems: [{ name: "Power bank rental, first hour", amount: station_.pricing.firstChargePence }],
+      buttonType: { applePay: "rent", googlePay: "pay" },
+      buttonHeight: 54,
+      layout: { maxColumns: 1, maxRows: 3, overflow: "never" },
+    };
+    if (station_.applePayOptions) opts.applePay = station_.applePayOptions; // optional, from config
+    var ece;
+    try { ece = expressElements.create("expressCheckout", opts); }
+    catch (e) { ece = expressElements.create("expressCheckout", { emailRequired: true }); }
+    ece.on("ready", function (ev) {
+      var methods = (ev && ev.availablePaymentMethods) || {};
+      var any = Object.keys(methods).some(function (k) { return methods[k]; });
+      $("#express-box").hidden = !any;
+      $("#rent-or").hidden = !any;
+    });
+    ece.on("click", function (ev) { clearSay(); ev.resolve(); });
+    ece.on("confirm", function (ev) {
+      pay(expressElements, (ev.billingDetails && ev.billingDetails.email) || "", ev);
+    });
+    ece.mount("#express-checkout");
+  }
+
   $("#email", form).addEventListener("input", function (e) { if (e.target.getAttribute("aria-invalid") === "true") setErr(e.target, ""); });
 
   function busy(on, label) {
-    payButton.disabled = on || !$("#consent", form).checked;
-    $(".btn-text", payButton).textContent = label || "Pay and release a power bank";
+    payButton.disabled = on;
+    $(".btn-text", payButton).textContent = label || "Pay by card and release a power bank";
   }
 
-  form.addEventListener("submit", function (e) {
-    e.preventDefault();
-    clearSay();
-    var email = $("#email", form), consent = $("#consent", form);
-    var mail = email.value.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) { setErr(email, "Please enter an email address for your receipt."); email.focus(); return; }
-    setErr(email, "");
-    if (!consent.checked) { setErr(consent, "Please tick the box to agree."); return; }
-    setErr(consent, "");
-    busy(true, "Paying...");
+  function startOnServer(email) {
+    return api("/api/rent/start", {
+      method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ station: station, email: email, consent: true, consentVersion: station_.consent.version }),
+    }).then(function (res) {
+      if (res.status === 409 && res.json.error === "terms_changed") { location.reload(); throw { quiet: true }; }
+      if (res.status === 409) { show("unavailable"); throw { quiet: true }; }
+      if (res.status === 400 && res.json.message) throw { shown: res.json.message };
+      if (res.status === 503 && res.json.error === "not_configured") { show("soon"); throw { quiet: true }; }
+      if (res.status === 429) throw { shown: "Too many attempts. Please wait a few minutes and try again." };
+      if (res.status !== 200 || !res.json.ok) throw { shown: "We couldn't start the payment. You have not been charged. Please try again." };
+      return { rentalId: res.json.rentalId, token: res.json.token, clientSecret: res.json.clientSecret };
+    });
+  }
 
-    // 1. Let the Payment Element check what was entered. 2. Ask our server for the payment. 3. Confirm it with Stripe.
-    elements.submit().then(function (r) {
+  // Shared by the wallet button and the card form: check what was entered, ask our server for the payment,
+  // then confirm it with Stripe. The power bank is released by the server only after Stripe confirms the payment.
+  function pay(group, email, walletEvent) {
+    var confirming = false;
+    clearSay();
+    busy(true, "Paying...");
+    group.submit().then(function (r) {
       if (r && r.error) throw { shown: r.error.message || "Please check your payment details." };
-      return current && current.clientSecret ? current : api("/api/rent/start", {
-        method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ station: station, email: mail, consent: true, consentVersion: station_.consent.version }),
-      }).then(function (res) {
-        if (res.status === 409 && res.json.error === "terms_changed") { location.reload(); throw { quiet: true }; }
-        if (res.status === 409) { show("unavailable"); throw { quiet: true }; }
-        if (res.status === 400 && res.json.message) throw { shown: res.json.message };
-        if (res.status === 503 && res.json.error === "not_configured") { show("soon"); throw { quiet: true }; }
-        if (res.status === 429) throw { shown: "Too many attempts. Please wait a few minutes and try again." };
-        if (res.status !== 200 || !res.json.ok) throw { shown: "We couldn't start the payment. You have not been charged. Please try again." };
-        return { rentalId: res.json.rentalId, token: res.json.token, clientSecret: res.json.clientSecret };
-      });
+      return current && current.clientSecret ? current : startOnServer(email);
     }).then(function (rec) {
       current = rec;
       save({ station: station, rentalId: rec.rentalId, token: rec.token });
       var back = location.origin + "/rent?station=" + encodeURIComponent(station) + "&rental=" + encodeURIComponent(rec.rentalId) + "&t=" + encodeURIComponent(rec.token);
-      return stripe.confirmPayment({ elements: elements, clientSecret: rec.clientSecret, confirmParams: { return_url: back }, redirect: "if_required" });
+      confirming = true;
+      return stripe.confirmPayment({ elements: group, clientSecret: rec.clientSecret, confirmParams: { return_url: back }, redirect: "if_required" });
     }).then(function (result) {
-      if (result && result.error) throw { shown: result.error.message || "Your payment didn't go through. You have not been charged.", retry: true };
+      if (result && result.error) throw { shown: result.error.message || "Your payment didn't go through. You have not been charged." };
       waitStarted = Date.now();
       show("waiting");
       follow(current);
     }).catch(function (err) {
-      if (err && err.quiet) return;
+      // Close the Apple Pay or Google Pay sheet if we failed before handing over to Stripe.
+      if (walletEvent && !confirming && walletEvent.paymentFailed) { try { walletEvent.paymentFailed({ reason: "fail" }); } catch (e) { /* already closed */ } }
       busy(false);
+      if (err && err.quiet) return;
       say((err && err.shown) || "Something went wrong. You have not been charged. Please try again.", true);
+      if (statusBox.scrollIntoView) statusBox.scrollIntoView({ block: "center", behavior: "smooth" });
       // A declined card keeps the same payment, so the next try uses the same one instead of starting another.
     });
+  }
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var email = $("#email", form);
+    var mail = email.value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) { setErr(email, "Please enter an email address for your receipt."); email.focus(); return; }
+    setErr(email, "");
+    pay(cardElements, mail, null);
   });
 
   $$('[data-action="retry"]', root).forEach(function (b) { b.addEventListener("click", loadStation); });

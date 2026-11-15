@@ -1,10 +1,10 @@
 <!-- {"title":"Rent a power bank | Procura","description":"Rent a power bank from a Procura station. Pay on your phone and collect it from the machine.","noindex":true,"minimal":true,"script":"rent.js"} -->
 
-<section class="page-head" data-hero style="padding-bottom:32px">
+<section class="page-head page-head--compact" data-hero>
   <div class="glow"></div>
   <div class="wrap">
     <span class="label" data-hero-fade>Power bank rental</span>
-    <h1 data-split>Rent a<br>power bank</h1>
+    <h1 data-split>Rent a power bank</h1>
     <p class="lede muted" data-hero-fade data-station-line>Checking the machine.</p>
   </div>
 </section>
@@ -49,39 +49,33 @@
       <div class="rent-price" aria-live="polite">
         <span class="label">Pay now</span>
         <p class="rent-price__now"><span data-money="firstChargePence">&nbsp;</span> <small>for the first hour</small></p>
-        <ul class="rent-rules">
-          <li>Then <strong data-money="pricePerHourPence"></strong> for each further started hour, up to <strong data-money="maxRentPence"></strong> in total.</li>
-          <li>If you haven't returned the power bank within <strong data-text="cutoffLabel"></strong>, you are also charged a <strong data-money="nonReturnFeePence"></strong> non-return fee.</li>
-          <li>The most you can be charged is <strong data-money="maxTotalPence"></strong>.</li>
-          <li>Your card is saved so we can take these later charges. We take them once, when you return the power bank or at the cut-off.</li>
-        </ul>
+        <p class="rent-consent-text"><strong>By paying, you confirm:</strong> <span data-text="consentText"></span> <a href="rental-terms.html" target="_blank" rel="noopener">Full rental terms</a></p>
       </div>
+
+      <div class="rent-express" id="express-box" hidden>
+        <div id="express-checkout"></div>
+        <p class="hint">One tap, nothing to type. Your receipt goes to the email on your Apple Pay or Google Pay account.</p>
+      </div>
+
+      <div class="form-status" role="status" aria-live="polite"></div>
+
+      <p class="rent-or" id="rent-or" hidden><span>or pay by card</span></p>
 
       <div class="field">
         <label for="email">Email for your receipt</label>
-        <input id="email" name="email" type="email" autocomplete="email" inputmode="email" required maxlength="160">
+        <input id="email" name="email" type="email" autocomplete="email" inputmode="email" maxlength="160">
         <span class="err" aria-live="polite"></span>
       </div>
 
       <div class="field">
-        <span class="label" id="pay-label">Pay with</span>
+        <span class="label" id="pay-label">Card</span>
         <div id="payment-element" aria-labelledby="pay-label"></div>
         <span class="err" id="payment-error" aria-live="polite"></span>
       </div>
 
-      <div class="field rent-consent">
-        <label class="rent-consent__row" for="consent">
-          <input id="consent" name="consent" type="checkbox" required>
-          <span data-text="consentText"></span>
-        </label>
-        <span class="hint"><a href="rental-terms.html" target="_blank" rel="noopener">Read the full rental terms</a> (opens in a new tab).</span>
-        <span class="err" aria-live="polite"></span>
-      </div>
-
       <div>
-        <button class="btn" type="submit" id="pay-button" disabled><span class="btn-text">Pay and release a power bank</span> <span class="arrow" aria-hidden="true">&rarr;</span></button>
+        <button class="btn" type="submit" id="pay-button"><span class="btn-text">Pay by card and release a power bank</span> <span class="arrow" aria-hidden="true">&rarr;</span></button>
       </div>
-      <div class="form-status" role="status" aria-live="polite"></div>
     </form>
 
     <div class="wl-panel" data-state="waiting" hidden tabindex="-1" role="status" aria-live="polite">

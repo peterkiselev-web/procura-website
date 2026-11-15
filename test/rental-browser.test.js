@@ -62,7 +62,7 @@ test("the rent page works end to end in a browser", { skip: !chromium && "Playwr
     await post("/__dev/supplier/machine?deviceId=DTA59552&online=1");
   });
 
-  await t.test("the fee and the cut-off are on the payment page itself, and paying needs the consent tick", async () => {
+  await t.test("the fee, the cut-off and the consent wording are on the payment page, with the wallet button first", async () => {
     const { page, errors } = await newPage();
     await page.goto(`${BASE}/rent?station=AJ1`);
     await page.waitForSelector("#rent-form:not([hidden])");
@@ -71,9 +71,8 @@ test("the rent page works end to end in a browser", { skip: !chromium && "Playwr
     assert.match(text, /12 hours/);
     assert.match(text, /£20\.00 non-return fee/);
     assert.match(text, /£40\.00/);
-    assert.equal(await page.locator("#pay-button").isDisabled(), true);
-    await page.check("#consent");
-    assert.equal(await page.locator("#pay-button").isDisabled(), false);
+    assert.equal(await page.locator("#express-box").isHidden(), false, "the wallet button shows");
+    assert.equal(await page.locator("#rent-or").isHidden(), false);
     assert.deepEqual(errors, []);
     // A bad email stops before anything is created.
     await page.fill("#email", "nope");
@@ -87,7 +86,6 @@ test("the rent page works end to end in a browser", { skip: !chromium && "Playwr
     await page.goto(`${BASE}/rent?station=AJ1`);
     await page.waitForSelector("#rent-form:not([hidden])");
     await page.fill("#email", "sam@example.com");
-    await page.check("#consent");
     await page.fill('[data-test="card"]', "4000 0000 0000 9995");
     await page.click("#pay-button");
     await page.waitForSelector(".form-status.is-error");
@@ -137,13 +135,29 @@ test("the rent page works end to end in a browser", { skip: !chromium && "Playwr
     assert.match(admin.headers.get("x-robots-tag"), /noindex/);
   });
 
+  await t.test("Apple Pay: one tap, no typing, and the email comes from the wallet", async () => {
+    const { page, errors } = await newPage();
+    const before = (await rentals()).length;
+    await page.goto(`${BASE}/rent?station=AJ1`);
+    await page.waitForSelector('[data-test="wallet"]');
+    await page.click('[data-test="wallet"]'); // no email typed, no box ticked
+    await page.waitForSelector('[data-state="active"]:not([hidden])', { timeout: 20000 });
+    const all = await rentals();
+    assert.equal(all.length, before + 1);
+    const mine = all.find((r) => r.email === "wallet@example.com");
+    assert.ok(mine, "the wallet's email is on the rental, for the receipt");
+    assert.match(mine.consent_text, /£20\.00 non-return fee/, "the wording shown above the button is recorded as agreed");
+    assert.equal(mine.status, "active");
+    assert.deepEqual(errors, []);
+    await post(`/__dev/supplier/return?tradeNo=${mine.trade_no}&minutes=5`);
+  });
+
   await t.test("if the machine never releases, the customer sees the automatic refund", async () => {
     const { page } = await newPage();
     await post("/__dev/supplier/machine?deviceId=DTA59552&neverRelease=1");
     await page.goto(`${BASE}/rent?station=AJ1`);
     await page.waitForSelector("#rent-form:not([hidden])");
     await page.fill("#email", "sam@example.com");
-    await page.check("#consent");
     await page.click("#pay-button");
     await page.waitForSelector('[data-state="waiting"]:not([hidden])', { timeout: 15000 });
     await page.waitForSelector('[data-state="refunded"]:not([hidden])', { timeout: 40000 });

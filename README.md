@@ -108,6 +108,7 @@ Open `http://localhost:3000/rent?station=AJ1`. The page uses a stand-in for Stri
 
 `created` (payment started) > `paid` (verified webhook received) > `releasing` (machine asked once) > `active` (supplier confirms a borrow time) > `returned` (supplier shows a return time) > `settled`. Other end states: `release_failed_refunded`, `expired_charged`, `payment_failed`. Two internal states are added so retries are safe: `refunding` and `expired`. One more, `abandoned`, is for a payment that was started and never made.
 
+- The page leads with one big Apple Pay or Google Pay button (Stripe's Express Checkout Element), visible without scrolling on a phone. The wallet supplies the customer's email for the receipt, so there is nothing to type. The consent wording sits directly above the button. A card form with an email field is below for everyone else.
 - A power bank is released only from the signature-verified `payment_intent.succeeded` webhook, and at most once per rental. The step `paid > releasing` can be won by only one caller, so a repeated webhook, or one sent under a new event id, cannot release twice. If the order result is unknown (a timeout), it is never asked for again: the 60 second rule ends it with a refund.
 - If nothing confirms the release in 60 seconds, the 3.00 is refunded and the supplier order is closed. The customer's page says so.
 - The supplier's callback and any event are hints only. Every change is based on a fresh `GET /rent/order/detail`.
