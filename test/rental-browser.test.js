@@ -161,6 +161,7 @@ test("the rent page works end to end in a browser", { skip: !chromium && "Playwr
     assert.equal(await page.locator("#rent-or").isHidden(), true);
     assert.equal(await page.locator("#pay-label").textContent(), "Pay with");
     assert.equal(await page.locator('[data-test="card"]').count(), 1, "the payment form is there, once");
+    assert.equal(await page.locator('[data-test="wallet"]').count(), 0, "the one-tap button is removed, so it cannot compete for Apple Pay");
     assert.deepEqual(errors, []);
   });
 
