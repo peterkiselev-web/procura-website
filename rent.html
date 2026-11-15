@@ -93,8 +93,10 @@
 
     <form id="rent-form" class="form rent-form" data-state="form" novalidate hidden>
       <div class="rent-price" aria-live="polite">
-        <span class="label" data-i18n="payNow">Pay now</span>
+        <span class="label rent-price__tag"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg> <span data-i18n="fastTag">Ultra fast charging · cables built in</span></span>
         <p class="rent-price__now"><span data-money="firstChargePence">&nbsp;</span> <small data-i18n="firstHour">for the first hour</small></p>
+        <p class="rent-price__now rent-price__then"><span data-money="pricePerHourPence">&nbsp;</span> <small data-i18n="everyHour">each hour after</small></p>
+        <p class="rent-price__cap" data-i18n="capLine">Rent is capped at <strong data-money="maxRentPence"></strong>.</p>
         <p class="rent-consent-text"><strong data-i18n="consentLead">By paying, you confirm:</strong> <span data-text="consentText"></span> <a href="/rental-terms" target="_blank" rel="noopener" data-i18n="termsLink">Full rental terms</a></p>
       </div>
 
