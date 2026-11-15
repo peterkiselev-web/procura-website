@@ -56,6 +56,11 @@
         <p class="rent-consent-text"><strong data-i18n="consentLead">By paying, you confirm:</strong> <span data-text="consentText"></span> <a href="rental-terms.html" target="_blank" rel="noopener" data-i18n="termsLink">Full rental terms</a></p>
       </div>
 
+      <div class="rent-seated" role="note">
+        <svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <p data-i18n="seated"><strong>Seated at a table?</strong> Call a member of staff over first, then pay. They will bring the power bank to your table.</p>
+      </div>
+
       <div class="field">
         <span class="label" id="pay-label" data-i18n="payWith">Pay with</span>
         <div id="payment-element" aria-labelledby="pay-label"></div>
@@ -79,6 +84,7 @@
       <span class="label" data-i18n="activeLabel">Ready</span>
       <h2 data-i18n="activeTitle">Take your power bank</h2>
       <p data-i18n="activeOut">It is out of the machine now. Take it from the open slot.</p>
+      <p class="rent-seated rent-seated--on-ink" data-i18n="activeSeated"><strong>Seated at a table?</strong> A member of staff will bring it to you.</p>
       <p class="muted" data-i18n="activeRules">Return it to the machine within <strong data-text="cutoffLabel"></strong>, by <strong data-text="deadline"></strong>. Each further started hour is <strong data-money="pricePerHourPence"></strong> up to <strong data-money="maxRentPence"></strong> in total, and we take any extra from your saved card when you return it. After the cut-off a <strong data-money="nonReturnFeePence"></strong> fee applies.</p>
       <p class="muted" data-i18n="activeClose">You can close this page. Scan the machine's code again at any time to see this page.</p>
       <form class="rent-receipt" novalidate>

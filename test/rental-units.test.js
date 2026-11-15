@@ -467,6 +467,28 @@ test("setup check with a station: shows what the supplier said about the machine
   for (const o of [out, off, down]) assert.ok(!JSON.stringify(o).includes("DTA59552"));
 });
 
+test("setup check with &orders=1: shows whether the account may use the order calls, without releasing anything", async () => {
+  const h = setup();
+  const rt = runtimeFor(h);
+  const ask = async (ip) => JSON.parse((await rentApi(rt, { method: "GET", action: "health", query: { station: "AJ1", orders: "1" }, ip })).body).machine.orderAccess;
+  // The fake answers "order not found" for a number it never issued: that is the supplier saying the call is allowed.
+  const ok = await ask("o1");
+  assert.equal(ok.allAnswered, true);
+  assert.equal(ok.detail.refused, false);
+  assert.ok(!h.supplier.log.some((l) => l[0] === "createOrder"), "never creates an order");
+  // A permission refusal (as the supplier said the account had at first) shows up as refused.
+  const real = h.supplier.getOrderDetail;
+  h.supplier.getOrderDetail = async () => { throw Object.assign(new Error("supplier refused: no permission for this interface"), { kind: "api", code: 403 }); };
+  const blocked = await ask("o2");
+  assert.equal(blocked.detail.refused, true);
+  assert.equal(blocked.detail.answered, false);
+  assert.equal(blocked.allAnswered, false);
+  h.supplier.getOrderDetail = real;
+  // Without &orders=1 the order calls are left alone.
+  const plain = JSON.parse((await rentApi(rt, { method: "GET", action: "health", query: { station: "AJ1" }, ip: "o3" })).body).machine;
+  assert.equal(plain.orderAccess, undefined);
+});
+
 test("supplier client reports the shape of the cabinet reply, with no identifiers", async () => {
   const http = fakeSupplierHttp(() => ({ body: { code: 0, data: { cabinet: { id: 77, qrCode: "SECRETQR", isOnline: false, offlineCause: "network", signal: 12, slots: 8 }, batteries: [{ slotNum: 1, batteryId: "B1", vol: 90 }], shop: { name: "x" } } } }));
   const cab = await createBajieSupplier({ ...base, authMode: "basic_plain", fetchImpl: http.fetchImpl }).checkCabinet("D1");

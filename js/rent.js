@@ -58,6 +58,8 @@
     activeLabel: "جاهز",
     activeTitle: "خذ الباور بانك",
     activeOut: "لقد خرج من الجهاز الآن. خذه من الفتحة المفتوحة.",
+    activeSeated: "<strong>هل تجلس على طاولة؟</strong> سيُحضره لك أحد الموظفين.",
+    seated: "<strong>هل تجلس على طاولة؟</strong> نادِ أحد الموظفين أولاً، ثم ادفع. سيُحضر لك الباور بانك إلى طاولتك.",
     activeRules: "أعِده إلى الجهاز خلال <strong data-text=\"cutoffLabel\"></strong>، أي قبل الساعة <strong data-text=\"deadline\"></strong>. كل ساعة إضافية تبدأ تكلّف <strong data-money=\"pricePerHourPence\"></strong> بحدّ أقصى <strong data-money=\"maxRentPence\"></strong> إجمالاً، ونخصم أي مبلغ إضافي من بطاقتك المحفوظة عند إعادته. بعد انتهاء المهلة تُطبَّق رسوم قدرها <strong data-money=\"nonReturnFeePence\"></strong>.",
     activeClose: "يمكنك إغلاق هذه الصفحة. امسح رمز الجهاز مرة أخرى في أي وقت لرؤيتها.",
     receiptLabel: "هل تريد إيصالاً؟ أضف بريدك الإلكتروني وسنرسله إليك. اختياري.",
