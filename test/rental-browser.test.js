@@ -74,6 +74,9 @@ test("the rent page works end to end in a browser", { skip: !chromium && "Playwr
     assert.match(text, /£40\.00/);
     assert.equal(await page.locator("#rent-form input[type=email]").count(), 0, "nothing to type before paying");
     assert.equal(await page.locator('[data-test="card"]').getAttribute("data-order"), "apple_pay,google_pay,card", "Apple Pay comes first and is selected");
+    assert.equal(await page.locator('[data-test="card"]').getAttribute("data-terms"), "never", "Stripe's duplicate future-payments paragraph is hidden; ours is on the page");
+    assert.equal((await page.locator("#pay-button").textContent()).replace(/\s+/g, " ").trim(), "Pay £3 and get a power bank →", "the button says what is taken now");
+    assert.equal(await page.locator("[data-pay-skeleton]").isHidden(), true, "the placeholder goes once Stripe's form is ready");
     assert.deepEqual(errors, []);
   });
 
