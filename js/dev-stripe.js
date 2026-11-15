@@ -16,6 +16,7 @@
               var handlers = {};
               return {
                 on: function (name, fn) { handlers[name] = fn; },
+                destroy: function () { var b = document.querySelector('[data-test="wallet"]'); if (b) b.parentNode.removeChild(b); },
                 mount: function (sel) {
                   var b = document.createElement("button");
                   b.type = "button"; b.className = "btn"; b.textContent = "Rent with Apple Pay (fake)"; b.setAttribute("data-test", "wallet");
