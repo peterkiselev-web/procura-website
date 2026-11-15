@@ -26,15 +26,13 @@
 <meta name="twitter:image:alt" content="Procura. Free power bank stations for UK venues, with nothing to pay and a share of every rental. A Procura counter station is shown on the right.">
 <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="preload" href="https://js.stripe.com/v3" as="script">
+<link rel="preconnect" href="https://api.stripe.com">
 <link rel="stylesheet" href="/css/style.css">
 </head>
-<body>
+<body class="is-minimal">
 <a class="skip" href="#main">Skip to content</a>
 
-<div class="curtain" aria-hidden="true"></div>
 
 <header class="header">
   <a class="logo" href="/" aria-label="Procura home">PROCURA</a>
@@ -45,22 +43,26 @@
 <section class="page-head page-head--compact" data-hero>
   <div class="glow"></div>
   <div class="wrap" id="rent-head">
-    <div class="rent-lang" role="group" aria-label="Language">
-      <button type="button" data-lang="en" aria-pressed="true">English</button>
-      <button type="button" data-lang="ar" aria-pressed="false" lang="ar">العربية</button>
+    <div class="rent-top">
+      <span class="label rent-station" data-station-line data-i18n="checking">Checking the machine.</span>
+      <div class="rent-lang" role="group" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="true">English</button>
+        <button type="button" data-lang="ar" aria-pressed="false" lang="ar">العربية</button>
+      </div>
     </div>
-    <span class="label" data-hero-fade data-i18n="heroLabel">Power bank rental</span>
     <h1 data-i18n="heroTitle">Rent a power bank</h1>
-    <p class="lede muted" data-hero-fade data-station-line data-i18n="checking">Checking the machine.</p>
   </div>
 </section>
 
 <section class="section section--tight is-bone">
   <div class="wrap rent-wrap" id="rent">
 
-    <div class="wl-panel" data-state="loading" role="status">
-      <span class="label" data-i18n="loadingLabel">One moment</span>
-      <p class="muted" data-i18n="checking">Checking the machine.</p>
+    <!-- While the price loads: the shape of the page, not a message, so nothing jumps when it arrives. -->
+    <div class="rent-loading" data-state="loading" role="status">
+      <span class="visually-hidden" data-i18n="checking">Checking the machine.</span>
+      <div class="rent-skel rent-skel--price" aria-hidden="true"></div>
+      <div class="rent-skel rent-skel--seated" aria-hidden="true"></div>
+      <div class="rent-skel rent-skel--pay" aria-hidden="true"></div>
     </div>
 
     <div class="wl-panel" data-state="unknown" hidden tabindex="-1">
@@ -95,24 +97,24 @@
       <div class="rent-price" aria-live="polite">
         <span class="label rent-price__tag"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg> <span data-i18n="fastTag">Ultra fast charging · cables built in</span></span>
         <p class="rent-price__now"><span data-money-short="pricePerHourPence">&nbsp;</span> <small data-i18n="perHour">per hour</small></p>
-        <p class="rent-consent-text"><strong data-i18n="consentLead">By paying, you confirm:</strong> <span data-text="consentText"></span> <a href="/rental-terms" target="_blank" rel="noopener" data-i18n="termsLink">Full rental terms</a></p>
       </div>
 
       <div class="rent-seated" role="note">
         <svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-        <p data-i18n="seated"><strong>Seated at a table?</strong> Call a member of staff over first, then pay. They will bring the power bank to your table.</p>
+        <p data-i18n="seated"><strong>Seated at a table?</strong> Call a member of staff and they'll bring you the power bank.</p>
       </div>
 
-      <div class="field">
-        <span class="label" id="pay-label" data-i18n="payWith">Pay with</span>
+      <!-- One clearly bounded payment area: people judge a payment form as safer when it is visibly enclosed and
+           labelled as secure (Baymard). The terms sit right above the button they apply to. -->
+      <div class="rent-pay">
+        <span class="rent-pay__secure" id="pay-label"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> <span data-i18n="securePay">Secure payment</span></span>
+        <div class="rent-skel rent-skel--element" data-pay-skeleton aria-hidden="true"></div>
         <div id="payment-element" aria-labelledby="pay-label"></div>
         <span class="err" id="payment-error" aria-live="polite"></span>
-      </div>
-
-      <div class="form-status" role="status" aria-live="polite"></div>
-
-      <div>
-        <button class="btn" type="submit" id="pay-button"><span class="btn-text" data-i18n="payButton">Pay and release a power bank</span> <span class="arrow" aria-hidden="true">&rarr;</span></button>
+        <p class="rent-consent-text"><strong data-i18n="consentLead">By paying, you confirm:</strong> <span data-text="consentText"></span> <a href="/rental-terms" target="_blank" rel="noopener" data-i18n="termsLink">Full rental terms</a></p>
+        <div class="form-status" role="status" aria-live="polite"></div>
+        <button class="btn" type="submit" id="pay-button" disabled><span class="btn-text" data-i18n="payButton">Pay <span data-money-short="firstChargePence"></span> and get a power bank</span> <span class="arrow" aria-hidden="true">&rarr;</span></button>
+        <p class="rent-assure" data-i18n="assure">If no power bank comes out, you're refunded automatically. Payments are handled securely by Stripe.</p>
       </div>
     </form>
 
@@ -191,37 +193,15 @@
       <p class="muted"><button class="btn btn--ghost" type="button" data-action="again"><span class="btn-text" data-i18n="rentOne">Rent a power bank</span></button></p>
     </div>
 
-    <p class="rent-foot muted" data-i18n="foot">Operated by JUKIE Experiences Ltd, trading as Procura. <a href="/rental-terms">Rental terms</a> and <a href="/privacy">privacy notice</a>.</p>
+    <p class="rent-foot muted" data-i18n="foot">Operated by JUKIE Experiences Ltd, trading as Procura. <a href="/rental-terms" target="_blank" rel="noopener">Rental terms</a> and <a href="/privacy" target="_blank" rel="noopener">privacy notice</a>.</p>
   </div>
 </section>
 
 </main>
 
-<footer class="footer">
-  <div class="wrap">
-    <p class="footer__big" aria-hidden="true">PROCURA</p>
-    <div class="footer__cols">
-      <div>
-        <span class="label">Procura UK</span>
-        <p class="muted">Power bank rental stations for gyms, hotels, cafés, bars and train stations. Free to host, with a share of every rental for you. Now opening in London.</p>
-      </div>
-      <div><span class="label">Pages</span><ul><li><a href="/">Home</a></li><li><a href="/machines">Machines</a></li><li><a href="/how-it-works">How it works</a></li><li><a href="/why-host">Why host one</a></li><li><a href="/partnerships">Partner</a></li><li><a href="/about">About</a></li><li><a href="/contact">Contact</a></li></ul></div>
-      <div><span class="label">Hosting for</span><ul><li><a href="/power-bank-rental-stations-for-bars-and-pubs">Bars and pubs</a></li><li><a href="/power-bank-rental-stations-for-restaurants-and-cafes">Restaurants and cafés</a></li><li><a href="/power-bank-rental-stations-for-gyms">Gyms and leisure centres</a></li><li><a href="/power-bank-rental-stations-for-hotels">Hotels</a></li></ul></div>
-      <div><span class="label">Guides and help</span><ul><li><a href="/faq">FAQs</a></li><li><a href="/are-power-bank-rental-stations-worth-it">Are power bank rental stations worth it?</a></li><li><a href="/how-to-choose-a-power-bank-rental-provider">How to choose a rental provider</a></li><li><a href="/contact?type=question">Ask a question</a></li></ul></div>
-      <div><span class="label">Partner with us</span><ul><li><a href="/referral">Referral programme</a></li><li><a href="/partnerships">Strategic partnerships</a></li><li><a href="/franchise">Franchise and territories</a></li></ul></div>
-      <div><span class="label">Legal</span><ul><li><a href="/privacy">Privacy notice</a></li></ul></div>
-    </div>
-    <div class="footer__legal">
-      <p>Procura is a trading name of JUKIE Experiences Ltd, a private limited company registered in England and Wales, company number 16203343. Registered office: 21 Royal Avenue, London, SW3 4QE.</p>
-      <p>&copy; 2026 JUKIE Experiences Ltd</p>
-    </div>
-  </div>
+<footer class="footer footer--minimal">
+  <div class="wrap"><p>Procura is a trading name of JUKIE Experiences Ltd, a private limited company registered in England and Wales, company number 16203343. Registered office: 21 Royal Avenue, London, SW3 4QE.</p></div>
 </footer>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" integrity="sha384-g4NTh/Iv5PPU4xPyhEWqPcwtNXOvdaDI8LLnyYfyNZOjKJeYQyjzQ9X5275eBjpt" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" integrity="sha384-Z3REaz79l2IaAZqJsSABtTbhjgOUYyV3p90XNnAPCSHg3EMTz1fouunq9WZRtj3d" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js" integrity="sha384-B2WBjDzEjJpYvhmi2UyEn7rektqkf5suS6sNoyyrf0EBAwBHdkiXxIlU0V5Ru2ed" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="/js/main.js"></script>
-
 <script src="/js/rent.js"></script>
 </body>
 </html>

@@ -234,9 +234,14 @@ function head(meta, file, body) {
 <meta name="twitter:image:alt" content="${esc(OG_IMAGE_ALT)}">
 ${meta.noindex ? "" : `<link rel="canonical" href="${meta.url}">\n`}<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
+${meta.minimal
+    // The payment page: the phone's own font (no font download blocking the first paint), and Stripe.js
+    // fetched while the page is still being read, so the payment form is ready sooner.
+    ? `<link rel="preload" href="https://js.stripe.com/v3" as="script">
+<link rel="preconnect" href="https://api.stripe.com">`
+    : `<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400;500&display=swap">`}
 <link rel="stylesheet" href="css/style.css">
 ${meta.three ? `<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js" crossorigin>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}</script>
@@ -248,7 +253,7 @@ function chrome(slug, meta) {
   const isCurrent = (file) => file === slug || (file === "partnerships.html" && partnerSlugs.includes(slug));
   const links = NAV.map((n) => `<a href="${urlFor(n.file)}"${isCurrent(n.file) ? ' aria-current="page"' : ""}>${n.label}</a>`).join("");
   const menuLinks = MENU.map((n, i) => `<li><a href="${urlFor(n.file)}"${n.file === slug ? ' aria-current="page"' : ""}><small>${String(i + 1).padStart(2, "0")}</small>${n.label}</a></li>`).join("\n      ");
-  return `<body${meta.loader ? ' class="is-loading"' : ""}>
+  return `<body${meta.loader ? ' class="is-loading"' : meta.minimal ? ' class="is-minimal"' : ""}>
 <a class="skip" href="#main">Skip to content</a>
 ${meta.loader ? `<div class="loader" aria-hidden="true">
   <div class="loader__top"><span class="loader__count">00</span><span class="loader__brand">Procura</span></div>
@@ -256,8 +261,8 @@ ${meta.loader ? `<div class="loader" aria-hidden="true">
   <div class="loader__bottom"><span>Power bank stations<br>for UK venues</span><span class="loader__brand">London · 2026</span></div>
   <span class="loader__bar"></span>
 </div>` : ""}
-<div class="curtain" aria-hidden="true"></div>
-
+${meta.minimal ? "" : `<div class="curtain" aria-hidden="true"></div>
+`}
 <header class="header">
   <a class="logo" href="index.html" aria-label="Procura home">PROCURA</a>${meta.minimal ? "" : `
   <nav class="header__nav" aria-label="Main">${links}</nav>
@@ -278,7 +283,13 @@ ${meta.minimal ? "" : `
 `}`;
 }
 
-function footer() {
+function footer(meta = {}) {
+  // The payment page keeps only the company details the law asks for: no links leading away from paying.
+  if (meta.minimal) return `
+<footer class="footer footer--minimal">
+  <div class="wrap"><p>${LEGAL}</p></div>
+</footer>
+`;
   const links = NAV.map((n) => `<li><a href="${urlFor(n.file)}">${n.label}</a></li>`).join("");
   const venues = VENUE_PAGES.map((p) => `<li><a href="${urlFor(p.file)}">${p.label}</a></li>`).join("");
   const guides = GUIDE_PAGES.map((p) => `<li><a href="${urlFor(p.file)}">${p.label}</a></li>`).join("");
@@ -307,6 +318,11 @@ function footer() {
 }
 
 function scripts(meta) {
+  // The payment page loads only its own script: no animation or smooth-scroll libraries to download first,
+  // and no intro animation in the way. Every tenth of a second before the price and Apple Pay show costs rentals.
+  if (meta.minimal) return `${meta.script ? `<script src="js/${meta.script}"></script>\n` : ""}</body>
+</html>
+`;
   // integrity hashes pin these exact files: if a CDN ever served altered code, the browser refuses it.
   return `<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" integrity="sha384-g4NTh/Iv5PPU4xPyhEWqPcwtNXOvdaDI8LLnyYfyNZOjKJeYQyjzQ9X5275eBjpt" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" integrity="sha384-Z3REaz79l2IaAZqJsSABtTbhjgOUYyV3p90XNnAPCSHg3EMTz1fouunq9WZRtj3d" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -342,7 +358,7 @@ for (const file of files) {
   for (const [token, value] of Object.entries(RENTAL_TOKENS)) body = body.split(token).join(value);
   const left = body.match(/@@[A-Z_]+@@/);
   if (left) throw new Error(`${file}: unknown token ${left[0]}`);
-  const html = cleanLinks(head(meta, file, body) + "\n" + chrome(file, meta) + '\n<main id="main">\n' + body + "\n</main>\n" + footer() + scripts(meta));
+  const html = cleanLinks(head(meta, file, body) + "\n" + chrome(file, meta) + '\n<main id="main">\n' + body + "\n</main>\n" + footer(meta) + scripts(meta));
   if (/—|–/.test(html)) throw new Error(`${file}: contains an em or en dash`);
   fs.writeFileSync(path.join(__dirname, file), html);
   count++;

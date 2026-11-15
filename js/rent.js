@@ -19,7 +19,7 @@
   var payButton = document.getElementById("pay-button");
   var statusBox = $(".form-status", form);
   var head = document.getElementById("rent-head");
-  var station_ = null, stripe = null, elements = null, current = null, lastRental = null, pollTimer = null, waitStarted = 0;
+  var station_ = null, stripe = null, elements = null, current = null, lastRental = null, pollTimer = null, waitStarted = 0, stripeReady = false;
   var lastFill = {}, lastView = null;
   var isLocal = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 
@@ -31,10 +31,8 @@
   // Arabic wording for every [data-i18n] element. English is what the page already contains.
   // Links inside are written as site addresses because this text is added after the page is built.
   var AR = {
-    heroLabel: "استئجار باور بانك",
     heroTitle: "استأجر باور بانك",
     checking: "جارٍ التحقق من الجهاز.",
-    loadingLabel: "لحظة من فضلك",
     unknownLabel: "الجهاز غير معروف",
     unknownTitle: "لم نتعرّف على هذا الجهاز.",
     unknownText: "يرجى مسح رمز QR الموجود على الجهاز مرة أخرى. لم يتم خصم أي مبلغ منك.",
@@ -53,13 +51,14 @@
     perHour: "لكل ساعة",
     consentLead: "بالدفع، فإنك تؤكد:",
     termsLink: "شروط الإيجار الكاملة (بالإنجليزية)",
-    payWith: "الدفع عبر",
-    payButton: "ادفع واستلم الباور بانك",
+    securePay: "دفع آمن",
+    payButton: "ادفع <span data-money-short=\"firstChargePence\"></span> واستلم الباور بانك",
+    assure: "إذا لم يخرج الباور بانك، نردّ لك المبلغ تلقائياً. تتم معالجة الدفع بأمان عبر Stripe.",
     activeLabel: "جاهز",
     activeTitle: "خذ الباور بانك",
     activeOut: "لقد خرج من الجهاز الآن. خذه من الفتحة المفتوحة.",
     activeSeated: "<strong>هل تجلس على طاولة؟</strong> سيُحضره لك أحد الموظفين.",
-    seated: "<strong>هل تجلس على طاولة؟</strong> نادِ أحد الموظفين أولاً، ثم ادفع. سيُحضر لك الباور بانك إلى طاولتك.",
+    seated: "<strong>هل تجلس على طاولة؟</strong> نادِ أحد الموظفين وسيُحضر لك الباور بانك.",
     activeRules: "أعِده إلى الجهاز خلال <strong data-text=\"cutoffLabel\"></strong>، أي قبل الساعة <strong data-text=\"deadline\"></strong>. كل ساعة إضافية تبدأ تكلّف <strong data-money=\"pricePerHourPence\"></strong> بحدّ أقصى <strong data-money=\"maxRentPence\"></strong> إجمالاً، ونخصم أي مبلغ إضافي من بطاقتك المحفوظة عند إعادته. بعد انتهاء المهلة تُطبَّق رسوم قدرها <strong data-money=\"nonReturnFeePence\"></strong>.",
     activeClose: "يمكنك إغلاق هذه الصفحة. امسح رمز الجهاز مرة أخرى في أي وقت لرؤيتها.",
     receiptLabel: "هل تريد إيصالاً؟ أضف بريدك الإلكتروني وسنرسله إليك. اختياري.",
@@ -83,7 +82,7 @@
     closedLabel: "انتهى",
     closedTitle: "انتهى هذا الإيجار.",
     rentOne: "استأجر باور بانك",
-    foot: "تديرها شركة JUKIE Experiences Ltd باسم Procura. <a href=\"/rental-terms\">شروط الإيجار</a> و<a href=\"/privacy\">إشعار الخصوصية</a> (بالإنجليزية).",
+    foot: "تديرها شركة JUKIE Experiences Ltd باسم Procura. <a href=\"/rental-terms\" target=\"_blank\" rel=\"noopener\">شروط الإيجار</a> و<a href=\"/privacy\" target=\"_blank\" rel=\"noopener\">إشعار الخصوصية</a> (بالإنجليزية).",
   };
   // Messages the script writes itself: [English, Arabic].
   var MSG = {
@@ -153,7 +152,9 @@
   function show(name) {
     Object.keys(panels).forEach(function (k) { panels[k].hidden = k !== name; });
     var el = panels[name];
-    if (el && name !== "form") { el.setAttribute("tabindex", "-1"); try { el.focus({ preventScroll: false }); } catch (e) { /* older browsers */ } }
+    // Messages take focus so screen readers read them out. The loading placeholder does not: it announces itself,
+    // and focusing it would scroll the page away from the heading while the price loads.
+    if (el && name !== "form" && name !== "loading") { el.setAttribute("tabindex", "-1"); try { el.focus({ preventScroll: false }); } catch (e) { /* older browsers */ } }
   }
   function fill(map) {
     Object.keys(map).forEach(function (k) { lastFill[k] = map[k]; });
@@ -281,7 +282,10 @@
         if (m.status === 404) { unavailable = true; return show("unknown"); }
         if (m.status === 200 && m.json && m.json.available === false) { unavailable = true; return show("unavailable"); }
       });
-      return startStripe().then(function () { if (!unavailable) show("form"); }).catch(function () { show("error"); });
+      // The price and the form show now. The pay button waits (with a placeholder where Apple Pay goes) until
+      // Stripe's form is ready, instead of the whole page waiting behind a loading message.
+      if (!unavailable) show("form");
+      return startStripe().then(function () { if (stripeReady) busy(false); }).catch(function () { show("error"); });
     }).catch(function () { show("error"); });
   }
 
@@ -310,15 +314,25 @@
       var el;
       try { el = elements.create("payment", opts); } catch (e) { el = elements.create("payment", { layout: "tabs" }); }
       el.mount("#payment-element");
-      if (el.on) el.on("change", function () { var pe = document.getElementById("payment-error"); if (pe) pe.textContent = ""; });
+      if (el.on) {
+        el.on("change", function () { var pe = document.getElementById("payment-error"); if (pe) pe.textContent = ""; });
+        el.on("ready", function () {
+          stripeReady = true;
+          var sk = $("[data-pay-skeleton]");
+          if (sk) sk.hidden = true;
+          busy(false);
+        });
+        el.on("loaderror", function () { show("error"); });
+      }
     });
   }
 
   function busy(on, label) {
     payButton.disabled = on;
     var text = $(".btn-text", payButton);
-    if (on) text.textContent = label;
-    else text.innerHTML = LANG === "ar" ? AR.payButton : (text.getAttribute("data-en") || "Pay and release a power bank");
+    if (on) { text.textContent = label; return; }
+    text.innerHTML = LANG === "ar" ? AR.payButton : (text.getAttribute("data-en") || 'Pay <span data-money-short="firstChargePence"></span> and get a power bank');
+    if (station_ && station_.pricing) fillMoney(station_.pricing); // the amount on the button
   }
 
   function startOnServer() {

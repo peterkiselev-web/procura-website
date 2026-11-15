@@ -61,16 +61,26 @@ test("the rent page: noindex, not in the sitemap, not linked from anywhere else,
 test("the rent page states the fee and the cut-off on the page itself, not only in the terms", () => {
   const rent = read("rent.html");
   // The consent wording states the price per hour, the cap, the 12 hour cut-off, the fee and the maximum (see copy.js),
-  // and it sits in the price box, right above the pay buttons.
+  // and it sits directly above the pay button it applies to.
   assert.match(rent, /data-money-short="pricePerHourPence"/, "the big price is the hourly rate");
   assert.ok(!/capped at/.test(rent), "the price box shows only the hourly rate; the cap is in the consent wording");
   assert.ok(rent.indexOf('data-i18n="seated"') > 0 && rent.indexOf('data-i18n="seated"') < rent.indexOf("payment-element"), "seated customers are told to call staff before they pay");
   assert.match(rent, /data-i18n="activeSeated"/, "and that staff bring it once it is out");
   assert.match(rent, /data-text="consentText"/);
-  assert.ok(rent.indexOf('data-text="consentText"') < rent.indexOf("payment-element"), "the wording comes before the payment form");
-  assert.match(rent, /By paying, you confirm:/, "the consent wording sits right above the payment form");
+  const consentAt = rent.indexOf('data-text="consentText"'), buttonAt = rent.indexOf('id="pay-button"');
+  assert.ok(consentAt > 0 && consentAt < buttonAt, "the wording comes before the pay button");
+  assert.ok(!/<(input|select|textarea)\b/.test(rent.slice(consentAt, buttonAt)), "nothing to fill in between the wording and the button");
+  assert.match(rent, /By paying, you confirm:/, "the consent wording sits right above the pay button");
+  assert.match(rent, /id="pay-button"[^>]*>[\s\S]{0,80}data-money-short="firstChargePence"/, "the button says how much is taken now");
+  assert.match(rent, /refunded automatically/, "and what happens if no power bank comes out");
   assert.ok(!/id="rent-form"[\s\S]*type="email"[\s\S]*id="pay-button"/.test(rent), "no email to type before paying");
   assert.match(rent, /data-lang="ar"/, "an Arabic switch");
+  // Speed and focus: the payment page loads only its own script, fetches Stripe.js early and has no links away.
+  for (const heavy of ["gsap", "lenis", "fonts.googleapis.com", "js/main.js", 'class="curtain"', "footer__cols", "header__nav"]) {
+    assert.ok(!rent.includes(heavy), `the payment page does not load or show ${heavy}`);
+  }
+  assert.match(rent, /<link rel="preload" href="https:\/\/js\.stripe\.com\/v3" as="script">/, "Stripe.js starts downloading straight away");
+  assert.match(rent, /company number 16203343/, "the company details stay on the page");
   assert.match(rent, /href="\/rental-terms"/);
 });
 

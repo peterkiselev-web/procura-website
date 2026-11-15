@@ -3,22 +3,26 @@
 <section class="page-head page-head--compact" data-hero>
   <div class="glow"></div>
   <div class="wrap" id="rent-head">
-    <div class="rent-lang" role="group" aria-label="Language">
-      <button type="button" data-lang="en" aria-pressed="true">English</button>
-      <button type="button" data-lang="ar" aria-pressed="false" lang="ar">العربية</button>
+    <div class="rent-top">
+      <span class="label rent-station" data-station-line data-i18n="checking">Checking the machine.</span>
+      <div class="rent-lang" role="group" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="true">English</button>
+        <button type="button" data-lang="ar" aria-pressed="false" lang="ar">العربية</button>
+      </div>
     </div>
-    <span class="label" data-hero-fade data-i18n="heroLabel">Power bank rental</span>
     <h1 data-i18n="heroTitle">Rent a power bank</h1>
-    <p class="lede muted" data-hero-fade data-station-line data-i18n="checking">Checking the machine.</p>
   </div>
 </section>
 
 <section class="section section--tight is-bone">
   <div class="wrap rent-wrap" id="rent">
 
-    <div class="wl-panel" data-state="loading" role="status">
-      <span class="label" data-i18n="loadingLabel">One moment</span>
-      <p class="muted" data-i18n="checking">Checking the machine.</p>
+    <!-- While the price loads: the shape of the page, not a message, so nothing jumps when it arrives. -->
+    <div class="rent-loading" data-state="loading" role="status">
+      <span class="visually-hidden" data-i18n="checking">Checking the machine.</span>
+      <div class="rent-skel rent-skel--price" aria-hidden="true"></div>
+      <div class="rent-skel rent-skel--seated" aria-hidden="true"></div>
+      <div class="rent-skel rent-skel--pay" aria-hidden="true"></div>
     </div>
 
     <div class="wl-panel" data-state="unknown" hidden tabindex="-1">
@@ -53,24 +57,24 @@
       <div class="rent-price" aria-live="polite">
         <span class="label rent-price__tag"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg> <span data-i18n="fastTag">Ultra fast charging · cables built in</span></span>
         <p class="rent-price__now"><span data-money-short="pricePerHourPence">&nbsp;</span> <small data-i18n="perHour">per hour</small></p>
-        <p class="rent-consent-text"><strong data-i18n="consentLead">By paying, you confirm:</strong> <span data-text="consentText"></span> <a href="rental-terms.html" target="_blank" rel="noopener" data-i18n="termsLink">Full rental terms</a></p>
       </div>
 
       <div class="rent-seated" role="note">
         <svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-        <p data-i18n="seated"><strong>Seated at a table?</strong> Call a member of staff over first, then pay. They will bring the power bank to your table.</p>
+        <p data-i18n="seated"><strong>Seated at a table?</strong> Call a member of staff and they'll bring you the power bank.</p>
       </div>
 
-      <div class="field">
-        <span class="label" id="pay-label" data-i18n="payWith">Pay with</span>
+      <!-- One clearly bounded payment area: people judge a payment form as safer when it is visibly enclosed and
+           labelled as secure (Baymard). The terms sit right above the button they apply to. -->
+      <div class="rent-pay">
+        <span class="rent-pay__secure" id="pay-label"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> <span data-i18n="securePay">Secure payment</span></span>
+        <div class="rent-skel rent-skel--element" data-pay-skeleton aria-hidden="true"></div>
         <div id="payment-element" aria-labelledby="pay-label"></div>
         <span class="err" id="payment-error" aria-live="polite"></span>
-      </div>
-
-      <div class="form-status" role="status" aria-live="polite"></div>
-
-      <div>
-        <button class="btn" type="submit" id="pay-button"><span class="btn-text" data-i18n="payButton">Pay and release a power bank</span> <span class="arrow" aria-hidden="true">&rarr;</span></button>
+        <p class="rent-consent-text"><strong data-i18n="consentLead">By paying, you confirm:</strong> <span data-text="consentText"></span> <a href="rental-terms.html" target="_blank" rel="noopener" data-i18n="termsLink">Full rental terms</a></p>
+        <div class="form-status" role="status" aria-live="polite"></div>
+        <button class="btn" type="submit" id="pay-button" disabled><span class="btn-text" data-i18n="payButton">Pay <span data-money-short="firstChargePence"></span> and get a power bank</span> <span class="arrow" aria-hidden="true">&rarr;</span></button>
+        <p class="rent-assure" data-i18n="assure">If no power bank comes out, you're refunded automatically. Payments are handled securely by Stripe.</p>
       </div>
     </form>
 
@@ -149,6 +153,6 @@
       <p class="muted"><button class="btn btn--ghost" type="button" data-action="again"><span class="btn-text" data-i18n="rentOne">Rent a power bank</span></button></p>
     </div>
 
-    <p class="rent-foot muted" data-i18n="foot">Operated by JUKIE Experiences Ltd, trading as Procura. <a href="rental-terms.html">Rental terms</a> and <a href="privacy.html">privacy notice</a>.</p>
+    <p class="rent-foot muted" data-i18n="foot">Operated by JUKIE Experiences Ltd, trading as Procura. <a href="rental-terms.html" target="_blank" rel="noopener">Rental terms</a> and <a href="privacy.html" target="_blank" rel="noopener">privacy notice</a>.</p>
   </div>
 </section>
