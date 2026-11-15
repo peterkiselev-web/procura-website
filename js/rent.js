@@ -309,7 +309,9 @@
         appearance: { theme: "stripe", variables: { colorPrimary: "#0a0a0a", fontFamily: "system-ui, sans-serif", borderRadius: "10px" } },
       });
       // Apple Pay first and already selected (Google Pay on Android), then card.
-      var opts = { layout: "tabs", paymentMethodOrder: ["apple_pay", "google_pay", "card"] };
+      // terms "never" hides Stripe's own "you allow ... to charge your card / Apple Pay account for future payments"
+      // paragraphs: our consent wording directly above the pay button already says exactly that, with the amounts and timing.
+      var opts = { layout: "tabs", paymentMethodOrder: ["apple_pay", "google_pay", "card"], terms: { card: "never", applePay: "never", googlePay: "never" } };
       if (station_.applePayOptions) opts.applePay = station_.applePayOptions; // optional, from config
       var el;
       try { el = elements.create("payment", opts); } catch (e) { el = elements.create("payment", { layout: "tabs" }); }

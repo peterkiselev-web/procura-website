@@ -17,6 +17,7 @@
                 box = document.createElement("input");
                 box.type = "text"; box.value = "4242 4242 4242 4242"; box.setAttribute("aria-label", "Card number (fake)"); box.setAttribute("data-test", "card");
                 box.setAttribute("data-order", (opts && opts.paymentMethodOrder || []).join(","));
+                box.setAttribute("data-terms", (opts && opts.terms && opts.terms.card) || "");
                 document.querySelector(sel).appendChild(box);
               },
               // Like Stripe's form, says when it is ready to take a payment.

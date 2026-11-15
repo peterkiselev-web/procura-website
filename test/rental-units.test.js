@@ -123,8 +123,16 @@ test("Stripe client: form encoding, keys and idempotency headers", async () => {
   assert.equal(init.headers.Authorization, "Bearer rk_test_abc");
   assert.equal(init.headers["Idempotency-Key"], "first-r1");
   assert.match(init.body, /setup_future_usage=off_session/);
-  assert.match(init.body, /payment_method_types%5B0%5D=card/);
+  // Stripe API 2026-09-30.endive refuses payment_method_types (seen live on 15 Nov 2026: every start failed).
+  assert.match(init.body, /(^|&)allowed_payment_method_types%5B0%5D=card/);
+  assert.ok(!/(^|&)payment_method_types/.test(init.body), "the removed parameter is never sent");
+  assert.equal(init.headers["Stripe-Version"], "2026-09-30.endive", "the API version is pinned, so sandbox and live behave the same");
   assert.match(init.body, /metadata%5Bkind%5D=first_hour/);
+  // The off-session charges for extra hours and the fee use the same setting.
+  await stripe.chargeOffSession({ amount: 300, currency: "gbp", customer: "cus_1", paymentMethod: "pm_1", rentalId: "r1", kind: "extra", description: "d", key: "k1" });
+  assert.match(seen[1].init.body, /(^|&)allowed_payment_method_types%5B0%5D=card/);
+  assert.ok(!/(^|&)payment_method_types/.test(seen[1].init.body));
+  assert.equal(seen[1].init.headers["Stripe-Version"], "2026-09-30.endive");
 });
 
 // ---- supplier client --------------------------------------------------------------------------------------------
@@ -467,6 +475,18 @@ test("setup check with a station: shows what the supplier said about the machine
   const unknown = JSON.parse((await rentApi(rt, { method: "GET", action: "health", query: { station: "ZZ" }, ip: "h6" })).body);
   assert.equal(unknown.machine.known, false);
   for (const o of [out, off, down]) assert.ok(!JSON.stringify(o).includes("DTA59552"));
+});
+
+test("setup check with &stripe=1: creates the first-hour payment as a customer would, then cancels it (sandbox only)", async () => {
+  const h = setup();
+  const rt = runtimeFor(h);
+  const out = JSON.parse((await rentApi(rt, { method: "GET", action: "health", query: { stripe: "1" }, ip: "s1" })).body).stripe;
+  assert.equal(out.ran, true);
+  assert.equal(out.ok, true, JSON.stringify(out));
+  assert.deepEqual(out.paymentMethodTypes, ["card"], "cards only, which covers Apple Pay and Google Pay");
+  assert.equal(out.setupFutureUsage, "off_session");
+  assert.equal(out.cancelled, true);
+  assert.ok(h.fakeStripe.state.intents.size > 0 && [...h.fakeStripe.state.intents.values()].every((pi) => pi.status === "canceled"), "nothing is left open to be paid");
 });
 
 test("setup check with &orders=1: shows whether the account may use the order calls, without releasing anything", async () => {
