@@ -208,15 +208,16 @@
     var opts = {
       emailRequired: true, // Apple Pay and Google Pay only share the email when asked
       lineItems: [{ name: "Power bank rental, first hour", amount: station_.pricing.firstChargePence }],
-      // Stripe's advice: "always" shows Apple Pay even when it cannot detect a card in the wallet.
-      paymentMethods: { applePay: "always", googlePay: "auto" },
+      // "always", as Stripe advises: Apple Pay shows even when Stripe cannot detect a card in the wallet, and Google Pay
+      // shows on iPhones too (on iOS browsers Stripe only offers Google Pay when it is set to "always").
+      paymentMethods: { applePay: "always", googlePay: "always" },
       buttonType: { applePay: "rent", googlePay: "pay" },
       buttonHeight: 54,
       layout: { maxColumns: 1, maxRows: 3, overflow: "never" },
     };
     if (station_.applePayOptions) opts.applePay = station_.applePayOptions; // optional, from config
     try { ece = expressElements.create("expressCheckout", opts); }
-    catch (e) { ece = expressElements.create("expressCheckout", { emailRequired: true, paymentMethods: { applePay: "always" } }); }
+    catch (e) { ece = expressElements.create("expressCheckout", { emailRequired: true, paymentMethods: { applePay: "always", googlePay: "always" } }); }
     // The box stays visible while Stripe works out which buttons to show: Stripe cannot lay out buttons in a hidden box.
     var settle = null;
     ece.on("ready", function (ev) {
