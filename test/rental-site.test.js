@@ -62,7 +62,8 @@ test("the rent page states the fee and the cut-off on the page itself, not only 
   const rent = read("rent.html");
   // The consent wording states the price per hour, the cap, the 12 hour cut-off, the fee and the maximum (see copy.js),
   // and it sits in the price box, right above the pay buttons.
-  assert.match(rent, /data-money="firstChargePence"/);
+  assert.match(rent, /data-money-short="pricePerHourPence"/, "the big price is the hourly rate");
+  assert.ok(!/capped at/.test(rent), "the price box shows only the hourly rate; the cap is in the consent wording");
   assert.match(rent, /data-text="consentText"/);
   assert.ok(rent.indexOf('data-text="consentText"') < rent.indexOf("payment-element"), "the wording comes before the payment form");
   assert.match(rent, /By paying, you confirm:/, "the consent wording sits right above the payment form");

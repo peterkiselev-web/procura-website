@@ -528,13 +528,10 @@ html { overflow-x: clip; }
 .rent-form[hidden] { display: none; }
 .rent-price { display: grid; gap: 10px; padding: clamp(20px, 4vw, 32px); border-radius: 24px; background: var(--ink); color: var(--bone); }
 .rent-price .label { color: rgba(237,234,227,0.7); }
-.rent-price__now { margin: 0; font-size: clamp(40px, 11vw, 60px); line-height: 1; letter-spacing: -0.03em; }
-.rent-price__now small { font-size: 16px; letter-spacing: 0; opacity: 0.75; margin-left: 6px; }
-.rent-price__then { font-size: clamp(34px, 9vw, 50px); margin-top: -2px; }
+.rent-price__now { margin: 0; font-size: clamp(56px, 16vw, 84px); line-height: 1; letter-spacing: -0.03em; }
+.rent-price__now small { font-size: clamp(22px, 6vw, 30px); letter-spacing: -0.01em; opacity: 0.85; margin-left: 8px; }
 .rent-price__tag { display: inline-flex; align-items: center; gap: 8px; color: var(--bone) !important; }
 .rent-price__tag svg { flex: none; }
-.rent-price__cap { margin: 0; font-size: 15px; color: rgba(237,234,227,0.8); }
-.rent-price__cap strong { color: #fff; }
 .rent-rules { margin: 4px 0 0; padding-left: 20px; display: grid; gap: 8px; font-size: 15px; color: rgba(237,234,227,0.88); }
 .rent-rules strong { color: #fff; }
 #payment-element { min-height: 56px; }
@@ -562,7 +559,7 @@ html { overflow-x: clip; }
 /* Arabic: right to left */
 [dir="rtl"] .rent-price, [dir="rtl"] .wl-panel, [dir="rtl"] .rent-consent-text, [dir="rtl"] .rent-foot { text-align: right; }
 [dir="rtl"] .btn .arrow { transform: scaleX(-1); }
-[dir="rtl"] .rent-price__now small { margin-left: 0; margin-right: 6px; }
+[dir="rtl"] .rent-price__now small { margin-left: 0; margin-right: 8px; }
 /* Arabic letters join up, so no letter spacing or capitals on labels */
 [dir="rtl"] .label, [dir="rtl"] .label + * .label { letter-spacing: 0; text-transform: none; font-family: inherit; font-size: 14px; }
 /* Keep amounts and times reading left to right inside Arabic sentences (so £3.00 never shows as 3.00£) */

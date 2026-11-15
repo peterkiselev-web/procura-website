@@ -50,9 +50,7 @@
     errorTitle: "تعذّر علينا التحقق من الجهاز الآن.",
     errorText: "يرجى تحديث الصفحة بعد دقيقة. لم يتم خصم أي مبلغ منك. إذا استمرت المشكلة، راسلنا على <a href=\"mailto:peter@procuracharge.com\">peter@procuracharge.com</a>.",
     fastTag: "شحن فائق السرعة · الكابلات مدمجة",
-    firstHour: "للساعة الأولى",
-    everyHour: "لكل ساعة بعدها",
-    capLine: "الحد الأقصى للإيجار <strong data-money=\"maxRentPence\"></strong>.",
+    perHour: "لكل ساعة",
     consentLead: "بالدفع، فإنك تؤكد:",
     termsLink: "شروط الإيجار الكاملة (بالإنجليزية)",
     payWith: "الدفع عبر",
@@ -165,6 +163,12 @@
     $$("[data-money]", root).forEach(function (el) {
       var key = el.getAttribute("data-money");
       if (pricing && pricing[key] !== undefined) el.textContent = money(pricing[key]);
+    });
+    // The big price drops the pence when it is whole pounds: "£3", not "£3.00".
+    $$("[data-money-short]", root).forEach(function (el) {
+      var key = el.getAttribute("data-money-short");
+      var p = pricing && pricing[key];
+      if (typeof p === "number") el.textContent = p % 100 === 0 ? "£" + p / 100 : money(p);
     });
   }
   // Puts the numbers and wording back after a language switch rewrote the text around them.
