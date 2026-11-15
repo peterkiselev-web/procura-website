@@ -220,6 +220,8 @@ test("supplier times: epoch, ISO and wall-clock formats", () => {
   assert.equal(parseSupplierTime("2026-11-13 10:00:00", "UTC"), Date.UTC(2026, 10, 13, 10));
   assert.equal(parseSupplierTime("2026-07-01 10:00:00", "Europe/London"), Date.UTC(2026, 6, 1, 9), "summer time is read as London time");
   assert.equal(parseSupplierTime("2026-12-01 10:00:00", "Europe/London"), Date.UTC(2026, 11, 1, 10));
+  assert.equal(parseSupplierTime("2026/11/13 10:00:00"), Date.UTC(2026, 10, 13, 10), "slashes, as many supplier systems write dates");
+  assert.equal(parseSupplierTime("2026/1/5 9:07:03"), Date.UTC(2026, 0, 5, 9, 7, 3), "single-digit month, day and hour");
   for (const empty of [null, undefined, "", 0, "0", "not a date", 12345]) assert.equal(parseSupplierTime(empty), null);
 });
 
