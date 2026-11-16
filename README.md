@@ -67,7 +67,22 @@ With no ClickUp settings the server uses a fake venue: open `http://127.0.0.1:31
 
 A guest scans a QR code on a machine, which opens `/rent?station=AJ1`. They pay 3.00 GBP with Apple Pay, Google Pay or a card (Stripe). The server then asks the machine to release a power bank (Bajie Charging open API), watches for the return, and charges any extra from the saved card, capped. This follows `PROCURA_QR_RENTAL_BUILD_SPEC.pdf`, section by section.
 
-**What has and has not been proven.** Everything below runs against fakes of Stripe and of the supplier (`lib/rental/stripe-fake.js`, `lib/rental/supplier-fake.js`), in unit tests and in a real browser (`npm test`). Against the real services, as of 15 Nov 2026: the live setup is complete; the real Bajie API reports machine AJ1 online with 12 charged power banks; the account may use the order calls (detail and close); and the Stripe sandbox has created and cancelled the first-hour payment (see the setup checks below). A full rental on the real machine (pay, release, return) has not been done yet: the real-machine tests in spec section 11 are the proof. Nothing takes a payment until everything is set up: with any setting missing the page answers "not configured" and the admin page says what is missing.
+**Status: live, taking real payments since 16 Nov 2026.** On machine AJ1 (Al Jawhara Garden) a full rental has run end to end, first in Stripe test mode and then with real money: pay with Apple Pay, payment confirmed, power bank out about 13 seconds after paying, put back, return noticed within seconds, settled at 3.00 GBP. Everything is also tested against fakes of Stripe and of the supplier (`lib/rental/stripe-fake.js`, `lib/rental/supplier-fake.js`), in unit tests and in a real browser (`npm test`). Not yet seen for real: an extra-hour charge on return, the cut-off fee, a declined later charge, and a release the machine refuses (all covered by the automated tests). Nothing takes a payment until everything is set up: with any setting missing the page answers "not configured" and the admin page says what is missing.
+
+### Start here in a new session
+
+For a new person or a new Claude session picking this up: read this section of the README first.
+
+- **Build and test:** `node build.js` (throws on em dashes or en dashes in pages), `node --test` (all must pass before a push), `npm start` (local, with fakes).
+- **Check the live system** (nothing is charged or released): `https://procuracharge.com/api/rent/health?station=AJ1&orders=1`, plus `&stripe=1` with test keys. Every rental's steps are in the Supabase table `rentals`, column `history`.
+- **Rules:**
+  - Never put a key, password or secret in the repo or a chat; they live only in Netlify variables.
+  - Release only after Stripe confirms the payment, never on the phone's word, never twice.
+  - Never bill past the caps.
+  - Stripe keys and webhook must come from the same Stripe environment.
+  - The pinned Stripe version (`2026-09-30.endive`) refuses `payment_method_types`.
+- **Working:** branch, pull request, wait for the Netlify preview, merge. Each production deploy costs 15 Netlify credits, so group changes.
+- **Writing for the owner:** no em dashes or en dashes; plain, short, step by step, with direct links.
 
 ### Where things are
 
@@ -83,7 +98,41 @@ A guest scans a QR code on a machine, which opens `/rent?station=AJ1`. They pay 
 | The rules (all the business logic) | `lib/rental/service.js`, with pricing in `pricing.js` and every setting in `config.js` |
 | Database | `supabase/migrations/0001_rentals.sql` |
 
-### Set it up, in this order
+### Set it up from scratch (what actually worked, 16 Nov 2026)
+
+Values come from the service named; only the variable names are written here. Never put a key, password or secret in this repository or in a chat.
+
+**Accounts**
+- **Netlify**: the site deploys from `main`. Use the **Personal plan or above**: every production deploy costs 15 credits, and the free plan's 300 a month ran out after about 20 deploys, after which production silently stopped updating while previews still built.
+- **Supabase**: project `qxjpbuomytximctqfhmd`. A new project needs `supabase/migrations/0001_rentals.sql` then `0002_lock_down_rentals.sql` run in its SQL editor. The free plan pauses after a week without use and has no backups.
+- **Stripe**: account `acct_1UYBX3K6YquxAygv` (Procuracharge). Apple Pay and Google Pay are registered for `procuracharge.com` in live mode (Settings, Payments, Payment method domains), which also covers test mode.
+- **Bajie Charging** (the supplier): API account details come from the supplier. The account needs permission for the order calls (`/rent/order/detail`, `/rent/order/close`), not only "eject": check with `/api/rent/health?station=AJ1&orders=1`.
+
+**Stripe, the trap to avoid.** Keys and webhook must be in the **same environment**. Stripe also offers separate "sandboxes", which are different accounts: on 15 to 16 Nov a webhook was made in a sandbox while the keys came from another environment, so Stripe never delivered to it. Every Stripe id carries the account's code: anything of ours should contain `K6YquxAygv` (for example `pk_live_51UYBX3K6YquxAygv...`, `we_...K6YquxAygv...`). For the live setup:
+1. In Stripe with **live** mode showing (no "Sandbox" or "Test mode" bar), API keys, **Create restricted key**, with **Write** on: Customers, PaymentIntents, SetupIntents, PaymentMethods, Charges and Refunds. Everything else None. Copy it (`rk_live_...`) and the publishable key (`pk_live_...`).
+2. Workbench, Webhooks, **Add destination**: Your account, **Snapshot** payload (not Thin), events `payment_intent.succeeded` and `charge.dispute.created`, type Webhook endpoint, URL `https://procuracharge.com/api/stripe/webhook`. Copy its signing secret (`whsec_...`). The webhook is a backup: rentals also confirm by asking Stripe directly.
+
+**Netlify environment variables** (Site configuration, Environment variables; mark the secret ones as secret; check the Production value when a variable has per-context values):
+
+| Variable | Value |
+| --- | --- |
+| `STRIPE_SECRET_KEY` | the `rk_live_` restricted key (`rk_test_` for testing) |
+| `STRIPE_PUBLISHABLE_KEY` | `pk_live_...` (or `pk_test_...`) from the same environment |
+| `STRIPE_WEBHOOK_SECRET` | the `whsec_` of the webhook in that same environment |
+| `ALLOW_LIVE_PAYMENTS` | `yes` with live keys (a live key without it is refused) |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | from Supabase, Project settings, API |
+| `BAJIE_BASE_URL`, `BAJIE_USERNAME`, `BAJIE_PASSWORD` | from the supplier |
+| `BAJIE_AUTH_MODE` | `basic_plain` (worked) |
+| `BAJIE_TIME_ZONE` | `Asia/Shanghai` (the supplier's times are China time with no offset) |
+| `BAJIE_CALLBACK_SECRET_PATH` | a long random string (24+ characters) |
+| `STATIONS` | `{"AJ1":{"deviceId":"DTA59552","name":"Al Jawhara Garden","lang":"ar"}}` |
+| `SITE_URL` | `https://procuracharge.com` |
+| `ADMIN_PASSWORD` | 12 or more characters |
+| `RENTALS_ENABLED` | `yes`, or `no` to stop new rentals at once |
+
+Then **Trigger deploy, Deploy site** (variables only take effect on a deploy), and run the setup checks below. With test keys, also run `?stripe=1`. Then rent one for real.
+
+### Earlier setup notes, in this order
 
 1. **Database.** The Supabase project `qxjpbuomytximctqfhmd` (restored on 14 Nov 2026, with `0001_rentals.sql` and `0002_lock_down_rentals.sql` applied). For a new project, run both migrations in its SQL editor. Copy the project URL and the `service_role` key (Project settings, API) into `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. The tables have row level security on and no policies, so the public key cannot read them.
 2. **Stripe, test mode first.** Create a new restricted key (not the supplier's full key) with write access to PaymentIntents, SetupIntents, Customers, PaymentMethods and Refunds. Set `STRIPE_SECRET_KEY` and `STRIPE_PUBLISHABLE_KEY` (test values). Add a webhook endpoint for `https://procuracharge.com/api/stripe/webhook` with the events `payment_intent.succeeded` and `charge.dispute.created`, and put its signing secret in `STRIPE_WEBHOOK_SECRET`.
@@ -126,7 +175,7 @@ Open `http://localhost:3000/rent?station=AJ1`. The page uses a stand-in for Stri
 - The page asks for nothing before paying: no email, no tick box. The payment form opens with Apple Pay first and already selected (Google Pay on Android phones, where Stripe offers it), then card. The consent wording sits directly above the pay button and is recorded with each rental; Stripe's own consent paragraphs are hidden (`terms: never`) because ours covers them. The payment page loads only its own script and Stripe.js, with no site animations, fonts or footer links. After the power bank is out, an optional box lets the customer have Stripe email a receipt (the rental's later charges then send receipts too).
 - The page loads Stripe as soon as it opens and fetches the prices while the machine check runs alongside, so the form shows quickly. The server always checks the machine again before it creates a payment.
 - English and Arabic: a switch at the top, the phone's language, or the station setting picks one. Arabic lays the page out right to left, translates every message, shows the consent wording in Arabic (that is what gets recorded), and Stripe's card form follows. To open AJ1 in Arabic by default, set `STATIONS` to `{"AJ1":{"deviceId":"DTA59552","name":"Al Jawhara Garden","lang":"ar"}}`. The Arabic wording was written without a native-speaker review: have one check it, especially the consent sentence. The full terms page is English only.
-- A power bank is released only from the signature-verified `payment_intent.succeeded` webhook, and at most once per rental. The step `paid > releasing` can be won by only one caller, so a repeated webhook, or one sent under a new event id, cannot release twice. If the order result is unknown (a timeout), it is never asked for again: the 60 second rule ends it with a refund.
+- A power bank is released only once Stripe confirms the payment, at most once per rental. Two independent routes confirm it: the signature-verified `payment_intent.succeeded` webhook, and the server asking Stripe directly for the rental's own PaymentIntent while the page waits (every 2 seconds, for 10 minutes) and from the scheduled job (for 3 minutes). The direct check accepts only this rental's first-hour payment, succeeded, for the full amount, and never takes the phone's word. Added on 16 Nov 2026 after a payment went through with no webhook delivered. Whichever route comes first wins. The step `paid > releasing` can be won by only one caller, so a repeated webhook, or one sent under a new event id, cannot release twice. If the order result is unknown (a timeout), it is never asked for again: the 60 second rule ends it with a refund.
 - If nothing confirms the release in 60 seconds, the 3.00 is refunded and the supplier order is closed. The customer's page says so.
 - The supplier's callback and any event are hints only. Every change is based on a fresh `GET /rent/order/detail`.
 - Billing uses the supplier's own `returnTime` minus `borrowTime`, so our clock and time zones do not matter. Any started hour counts. The extra is charged once, on return. A power bank returned after the cut-off is treated as not returned.
@@ -166,9 +215,26 @@ All in Stripe test mode, with `ALLOW_LIVE_PAYMENTS` unset. Stripe's test cards (
 
 Also check on a real phone, in test mode: Apple Pay and Google Pay appear and complete a payment, the browser console shows no Content Security Policy errors from Stripe (the policy in `netlify.toml` and `server.js` was written from Stripe's documented hosts, and has not been seen working with the real Stripe.js), and the receipt email arrives in live mode.
 
+### What the real supplier sends (seen on AJ1, 16 Nov 2026)
+
+- Cabinet query: the online flag is `online` (the documentation says `isOnline`); both are read. Battery `vol` is a percentage.
+- Order detail: `borrowTime` and `returnTime` look like `2026-11-16T09:31:39`, China time with no offset (hence `BAJIE_TIME_ZONE=Asia/Shanghai`). `borrowTime` is filled as soon as the power bank is pushed out. After a return, `borrowStatus` was `3`. Other fields: `orderId`, `batteryId`, `borrowSlot`, `returnSlot`, `price`, `priceMinute`, `deposit`, `dailyMaxPrice`, `orderType` (`OpenAccount`).
+- Callback: a form body `status=1&tradeNo=...` when the power bank is out and `status=2&tradeNo=...` when it is returned. Treated as a hint only.
+- The machine's own card reader also charges into the same Stripe account (metadata `origin: pos`, a 20.00 hold then the rent captured). Those payments are the supplier's system and are ignored here.
+
+### Problems already met, and the fix
+
+| What you see | Cause | Fix |
+| --- | --- | --- |
+| "We couldn't start the payment" every time | Stripe API 2026-09-30.endive removed `payment_method_types` | Fixed in code (`allowed_payment_method_types`, version pinned). Run `?stripe=1` |
+| Paid, page stuck on "Confirming your payment" | Webhook not delivered (it was in another Stripe environment) | Fixed in code: the server now asks Stripe directly. Still put the webhook in the same environment as the keys |
+| Merged code never appears on the live site | Netlify credits used up | Upgrade the Netlify plan, then trigger a deploy |
+| Times in the admin list 8 hours out | Supplier times are China time | `BAJIE_TIME_ZONE=Asia/Shanghai` |
+| Machine shown offline although it is on | Supplier field `online`, not `isOnline` | Fixed in code |
+
 ### Going live
 
-When the six tests pass: create live Stripe keys and a live webhook, set them, set `ALLOW_LIVE_PAYMENTS=yes`, register the domain for Apple Pay in live mode, and redeploy. A live key without `ALLOW_LIVE_PAYMENTS=yes` is refused. To stop rentals quickly at any time, set `RENTALS_ENABLED=no` and redeploy: the page says the machine is unavailable and nothing can start (rentals already out carry on normally).
+Done on 16 Nov 2026. To do it again: create live Stripe keys and a live webhook (see "Set it up from scratch"), set them, set `ALLOW_LIVE_PAYMENTS=yes`, and redeploy. While testing with test keys, any customer who scans gets a free rental, so set `RENTALS_ENABLED=no` except while you test. A live key without `ALLOW_LIVE_PAYMENTS=yes` is refused. To stop rentals quickly at any time, set `RENTALS_ENABLED=no` and redeploy: the page says the machine is unavailable and nothing can start (rentals already out carry on normally).
 
 ### Running it
 
