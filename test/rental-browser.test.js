@@ -97,6 +97,10 @@ test("the rent page works end to end in a browser", { skip: !chromium && "Playwr
     await page.click("#pay-button");
     await page.waitForSelector('[data-state="active"]:not([hidden])', { timeout: 20000 });
     assert.match(await page.locator('[data-state="active"]').innerText(), /Take your power bank/);
+    // The running total: 3.00 so far, and when the next 3.00 would start (shown 2 minutes early, rounded down).
+    const meter = (await page.locator(".rent-meter").innerText()).replace(/\s+/g, " ");
+    assert.match(meter, /£3\.00 so far/);
+    assert.match(meter, /In use 0 min · next £3\.00 from \d\d:\d\d/);
     let all = await rentals();
     assert.equal(all.length, 1, "the retry reused the same rental");
     assert.equal(all[0].status, "active");
@@ -161,6 +165,7 @@ test("the rent page works end to end in a browser", { skip: !chromium && "Playwr
     await page.click("#pay-button");
     await page.waitForSelector('[data-state="active"]:not([hidden])', { timeout: 20000 });
     assert.match(await page.locator('[data-state="active"]').innerText(), /خذ الباور بانك/);
+    assert.match((await page.locator(".rent-meter").innerText()).replace(/\s+/g, " "), /£3\.00 حتى الآن/);
     const mine = (await rentals()).slice(0, (await rentals()).length - before)[0];
     assert.match(mine.consent_text, /^أوافق على شروط الإيجار/, "the Arabic wording the customer saw is the one recorded");
     // The choice is remembered on this phone.

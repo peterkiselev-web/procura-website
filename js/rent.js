@@ -58,6 +58,7 @@
     activeTitle: "خذ الباور بانك",
     activeOut: "لقد خرج من الجهاز الآن. خذه من الفتحة المفتوحة.",
     activeSeated: "<strong>هل تجلس على طاولة؟</strong> سيُحضره لك أحد الموظفين.",
+    soFarLabel: "حتى الآن",
     seated: "<strong>هل تجلس على طاولة؟</strong> نادِ أحد الموظفين وسيُحضر لك الباور بانك.",
     activeRules: "أعِده إلى الجهاز خلال <strong data-text=\"cutoffLabel\"></strong>، أي قبل الساعة <strong data-text=\"deadline\"></strong>. كل ساعة إضافية تبدأ تكلّف <strong data-money=\"pricePerHourPence\"></strong> بحدّ أقصى <strong data-money=\"maxRentPence\"></strong> إجمالاً، ونخصم أي مبلغ إضافي من بطاقتك المحفوظة عند إعادته. بعد انتهاء المهلة تُطبَّق رسوم قدرها <strong data-money=\"nonReturnFeePence\"></strong>.",
     activeClose: "يمكنك إغلاق هذه الصفحة. امسح رمز الجهاز مرة أخرى في أي وقت لرؤيتها.",
@@ -102,6 +103,8 @@
     receiptSent: ["Receipt sent.", "تم إرسال الإيصال."],
     receiptBad: ["That email address doesn't look right.", "عنوان البريد الإلكتروني غير صحيح."],
     receiptFailed: ["We couldn't send it just now. Please try again.", "تعذّر الإرسال الآن. يرجى المحاولة مرة أخرى."],
+    meterNext: ["In use {t} · next {p} from {time}", "قيد الاستخدام منذ {t} · المبلغ التالي {p} ابتداءً من {time}"],
+    meterCapped: ["In use {t} · rent has reached the {max} maximum", "قيد الاستخدام منذ {t} · بلغ الإيجار الحد الأقصى {max}"],
   };
   var LANG = "en";
   var msg = function (key) { return MSG[key][LANG === "ar" ? 1 : 0]; };
@@ -225,7 +228,35 @@
     });
   }
 
+  // ---- running total, while the power bank is out ----------------------------------------------------------------
+  // What returning it now would cost, worked out on the phone with the server's own rule: any started hour counts,
+  // at least one, capped. Nothing extra to run and no extra charges. The machine starts its clock a few seconds
+  // before the page hears the power bank is out, so the next charge time is shown 2 minutes early, rounded down:
+  // a customer who goes by it can never be caught out.
+  function durText(ms) {
+    var mins = Math.max(0, Math.floor(ms / 60000)), h = Math.floor(mins / 60), m = mins % 60, mm = (m < 10 ? "0" : "") + m;
+    if (LANG === "ar") return h ? h + " س " + mm + " د" : m + " د";
+    return h ? h + " h " + mm + " min" : m + " min";
+  }
+  function hhmm(t) { return new Date(t).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }); }
+  function updateMeter(v) {
+    var box = $(".rent-meter", panels.active);
+    if (!box) return;
+    var start = Date.parse((v && v.releasedAt) || ""), per = Number(v && v.pricePerHourPence), max = Number(v && v.maxRentPence);
+    if (!v || v.state !== "active" || !start || !per || !max) { box.hidden = true; return; }
+    var elapsed = Math.max(0, Date.now() - start);
+    var hours = Math.max(1, Math.ceil(elapsed / 3600000));
+    var rent = Math.max(Math.min(max, hours * per), Number(v.paidPence) || 0);
+    var line = hours * per >= max
+      ? msg("meterCapped").replace("{max}", money(max))
+      : msg("meterNext").replace("{p}", money(Math.min(per, max - hours * per)))
+        .replace("{time}", hhmm(Math.floor((start + hours * 3600000 - 120000) / 60000) * 60000));
+    fill({ soFar: money(rent), meterNext: line.replace("{t}", durText(elapsed)) });
+    box.hidden = false;
+  }
+
   function applyView(v) {
+    updateMeter(v);
     fill({
       cutoffLabel: cutoffText(v.cutoffMs, v.cutoffLabel), total: money(v.totalPence), due: money(v.duePence), refunded: money(v.refundedPence || v.paidPence),
       deadline: v.cutoffAt ? new Date(v.cutoffAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "",
