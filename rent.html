@@ -129,6 +129,11 @@
       <h2 data-i18n="activeTitle">Take your power bank</h2>
       <p data-i18n="activeOut">It is out of the machine now. Take it from the open slot.</p>
       <p class="rent-seated rent-seated--on-ink" data-i18n="activeSeated"><strong>Seated at a table?</strong> A member of staff will bring it to you.</p>
+      <!-- What returning it now would cost, worked out on the phone with the same rule the server bills by. -->
+      <div class="rent-meter" hidden>
+        <p class="rent-meter__now"><span data-text="soFar">&nbsp;</span> <small data-i18n="soFarLabel">so far</small></p>
+        <p class="rent-meter__next" data-text="meterNext"></p>
+      </div>
       <p class="muted" data-i18n="activeRules">Return it to the machine within <strong data-text="cutoffLabel"></strong>, by <strong data-text="deadline"></strong>. Each further started hour is <strong data-money="pricePerHourPence"></strong> up to <strong data-money="maxRentPence"></strong> in total, and we take any extra from your saved card when you return it. After the cut-off a <strong data-money="nonReturnFeePence"></strong> fee applies.</p>
       <p class="muted" data-i18n="activeClose">You can close this page. Scan the machine's code again at any time to see this page.</p>
       <form class="rent-receipt" novalidate>
