@@ -550,6 +550,82 @@ test("an unpaid rental is given up on, its payment cancelled, and a payment that
   assert.equal(createOrders(h2).length, 0, "no power bank is released for a rental that was given up on");
 });
 
+// Seen on 16 Nov 2026: the payment went through and Stripe delivered no webhook, so the page waited forever.
+test("paid but no webhook: the waiting page's check asks Stripe directly and releases, once", async () => {
+  const h = setup();
+  const s = await h.start();
+  const row0 = await h.store.get(s.json.rentalId);
+  const ask = () => h.service.getStatus({ id: s.json.rentalId, token: s.json.token });
+  h.advance(2000);
+  assert.equal((await ask()).json.state, "awaiting_payment", "nothing happens before the money is there");
+  assert.equal(createOrders(h).length, 0);
+  const delivery = h.fakeStripe.completePayment(row0.stripe_payment_intent_id); // paid at Stripe; the webhook is lost
+  h.advance(2000);
+  assert.equal((await ask()).json.state, "releasing");
+  assert.equal(createOrders(h).length, 1);
+  const row = await h.store.get(row0.id);
+  assert.equal(row.paid_pence, 300);
+  assert.ok(row.history.some((x) => /payment confirmed by Stripe \(checked while the page waited\)/.test(x.text)));
+  // The webhook turns up late, and the page keeps asking: neither releases a second power bank.
+  const late = await h.service.handleStripeWebhook(delivery.body, delivery.signature);
+  assert.equal(late.status, 200);
+  h.advance(2000);
+  await ask();
+  assert.equal(createOrders(h).length, 1, "one payment, one power bank");
+});
+
+test("the direct check only accepts this rental's own first-hour payment, succeeded, for the full amount", async () => {
+  // A payment whose details do not match this rental is never taken as payment for it.
+  for (const tamper of [(pi) => { pi.metadata.rental_id = "someone-else"; }, (pi) => { pi.metadata.kind = "extra"; }, (pi) => { pi.amount_received = 100; }]) {
+    const h = setup();
+    const s = await h.start();
+    const row0 = await h.store.get(s.json.rentalId);
+    h.fakeStripe.completePayment(row0.stripe_payment_intent_id);
+    tamper(h.fakeStripe.state.intents.get(row0.stripe_payment_intent_id));
+    h.advance(2000);
+    const st = await h.service.getStatus({ id: s.json.rentalId, token: s.json.token });
+    assert.equal(st.json.state, "awaiting_payment");
+    assert.equal(createOrders(h).length, 0);
+  }
+  // Stripe unreachable during the check: keep waiting, release nothing; the next check (Stripe back) releases.
+  const h = setup();
+  const s = await h.start();
+  const row0 = await h.store.get(s.json.rentalId);
+  h.fakeStripe.completePayment(row0.stripe_payment_intent_id);
+  h.fakeStripe.controls.networkFail = true; // the next request to Stripe fails
+  h.advance(2000);
+  assert.equal((await h.service.getStatus({ id: s.json.rentalId, token: s.json.token })).json.state, "awaiting_payment");
+  assert.equal(createOrders(h).length, 0);
+  h.advance(2000);
+  assert.equal((await h.service.getStatus({ id: s.json.rentalId, token: s.json.token })).json.state, "releasing");
+  assert.equal(createOrders(h).length, 1);
+});
+
+test("page closed and no webhook: the scheduled job confirms within 3 minutes; after that it refunds instead of releasing", async () => {
+  const h = setup();
+  const s = await h.start();
+  const row0 = await h.store.get(s.json.rentalId);
+  h.fakeStripe.completePayment(row0.stripe_payment_intent_id);
+  h.advance(60 * 1000);
+  await h.service.runJobs();
+  assert.notEqual((await h.store.get(row0.id)).status, S.CREATED);
+  assert.equal(createOrders(h).length, 1);
+
+  // Paid, but nothing noticed for 4 minutes (page closed, no webhook): the customer may have gone, so no release.
+  const h2 = setup();
+  const s2 = await h2.start();
+  const r2 = await h2.store.get(s2.json.rentalId);
+  h2.fakeStripe.completePayment(r2.stripe_payment_intent_id);
+  h2.advance(4 * MIN);
+  await h2.service.runJobs();
+  assert.equal((await h2.store.get(r2.id)).status, S.CREATED);
+  assert.equal(createOrders(h2).length, 0);
+  h2.advance(27 * MIN);
+  await h2.service.runJobs();
+  assert.equal((await h2.store.get(r2.id)).status, S.RELEASE_FAILED_REFUNDED, "refunded by the sweep at 30 minutes");
+  assert.equal(createOrders(h2).length, 0);
+});
+
 test("paid but the webhook never arrived: refunded by the sweep, never released from it", async () => {
   const h = setup();
   const s = await h.start();
