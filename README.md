@@ -69,6 +69,24 @@ A guest scans a QR code on a machine, which opens `/rent?station=AJ1`. They pay 
 
 **Status: live, taking real payments since 16 Nov 2026.** On machine AJ1 (Al Jawhara Garden) a full rental has run end to end, first in Stripe test mode and then with real money: pay with Apple Pay, payment confirmed, power bank out about 13 seconds after paying, put back, return noticed within seconds, settled at 3.00 GBP. Everything is also tested against fakes of Stripe and of the supplier (`lib/rental/stripe-fake.js`, `lib/rental/supplier-fake.js`), in unit tests and in a real browser (`npm test`). Not yet seen for real: an extra-hour charge on return, the cut-off fee, a declined later charge, and a release the machine refuses (all covered by the automated tests). Nothing takes a payment until everything is set up: with any setting missing the page answers "not configured" and the admin page says what is missing.
 
+### Add a new machine (new location)
+
+No code changes, nothing new in Stripe or Supabase. Each machine is one entry in the `STATIONS` setting plus its own QR code. Prices are the same for every machine (a different price for one venue would need code work).
+
+1. **Supplier:** ask the supplier to add the new machine to the **same API account** as AJ1, and get its **device id** (like `DTA59552`, shown on the machine or in their system).
+2. **Choose a station code:** short and permanent, 1 to 16 letters, digits, `-` or `_` (for example `SOH1`). It goes into the printed QR code, so never reuse or change it. If a machine is later swapped, only its device id in `STATIONS` changes.
+3. **Make the QR code** (in a fresh Claude chat, ask: "Add a new machine: code SOH1, device DTA12345, name Soho Gym, language en"):
+   ```
+   npm install --no-save qrcode@1.5.4 jsqr@1.4.0 pngjs@7.0.0
+   node scripts/new-station.js --code SOH1 --device DTA12345 --name "Soho Gym" --lang en --current '<current STATIONS JSON>'
+   ```
+   It writes `assets/qr/rent-SOH1.svg` (print) and `.png` (screens), reads the code back to prove it opens `https://procuracharge.com/rent?station=SOH1`, and prints the whole new `STATIONS` value. Commit the two QR files (they are a record; the site does not need them).
+4. **Netlify:** https://app.netlify.com/projects/illustrious-praline-766938/configuration/env, edit `STATIONS`, paste the new value (all machines, including AJ1), save. Then https://app.netlify.com/projects/illustrious-praline-766938/deploys, **Trigger deploy, Deploy site**, and wait for **Published**.
+5. **Check:** open `https://procuracharge.com/api/rent/health?station=SOH1&orders=1`. It must show `"known":true`, `"online":true`, `"canRent":true` and `"allAnswered":true`. If the machine is not found or not reachable, the supplier has not added it to the account yet.
+6. **Print and place:** print the SVG at least 3 cm wide, scan it with a phone before printing many, and place it where people see it.
+7. **One real rental:** rent with Apple Pay, put it back, check the rental in the Supabase table `rentals` (or `/admin`), and refund yourself in Stripe if you like.
+8. **Brief the venue staff:** seated customers call staff, who take the power bank from the machine as it comes out; returns go in any empty slot, pushed until it clicks.
+
 ### Start here in a new session
 
 For a new person or a new Claude session picking this up: read this section of the README first.
