@@ -1,5 +1,5 @@
 "use strict";
-// Customer API for the QR rental page: /api/rent/station, /api/rent/start, /api/rent/status.
+// Customer API for the QR rental page: /api/rent/station, /api/rent/start, /api/rent/status, /api/rent/staff.
 const { getRuntime } = require("../../lib/rental/runtime");
 const { rentApi, rawBodyOf, ipOf, toNetlify, json, MAX_JSON } = require("../../lib/rental/http");
 

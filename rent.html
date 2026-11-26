@@ -116,6 +116,20 @@
         <button class="btn" type="submit" id="pay-button" disabled><span class="btn-text" data-i18n="payButton">Pay <span data-money-short="firstChargePence"></span> and get a power bank</span> <span class="arrow" aria-hidden="true">&rarr;</span></button>
         <p class="rent-assure" data-i18n="assure">If no power bank comes out, you're refunded automatically. Payments are handled securely by Stripe.</p>
       </div>
+      <!-- Only when staff codes are set up (STAFF_CODES). -->
+      <p class="rent-staff-open" data-staff-link hidden><button type="button" class="rent-linkbtn" data-action="staff" data-i18n="staffOpen">Work here? Use your staff code</button></p>
+    </form>
+
+    <!-- A free power bank for the venue's staff, with a personal code. The server checks the code and the limits. -->
+    <form class="wl-panel rent-staff" id="staff-form" data-state="staff" novalidate hidden tabindex="-1">
+      <span class="label" data-i18n="staffLabel">Staff</span>
+      <h2 data-i18n="staffTitle">A free power bank, with our thanks</h2>
+      <p data-i18n="staffText">Thank you for looking after our guests. Stand at the machine, enter your staff code, and a power bank comes out. It's free and no card is needed. Please put it back in the machine before you leave.</p>
+      <label class="rent-staff__label" for="staff-code" data-i18n="staffCodeLabel">Your staff code</label>
+      <input id="staff-code" name="staff_code" type="text" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" maxlength="80">
+      <div class="form-status" role="status" aria-live="polite"></div>
+      <button class="btn" type="submit" id="staff-button"><span class="btn-text" data-i18n="staffButton">Get my free power bank</span> <span class="arrow" aria-hidden="true">&rarr;</span></button>
+      <p class="rent-staff-open"><button type="button" class="rent-linkbtn" data-action="pay" data-i18n="staffBack">Back to paying</button></p>
     </form>
 
     <div class="wl-panel" data-state="waiting" hidden tabindex="-1" role="status" aria-live="polite">
@@ -128,15 +142,16 @@
       <span class="label" data-i18n="activeLabel">Ready</span>
       <h2 data-i18n="activeTitle">Take your power bank</h2>
       <p data-i18n="activeOut">It is out of the machine now. Take it from the open slot.</p>
-      <p class="rent-seated rent-seated--on-ink" data-i18n="activeSeated"><strong>Seated at a table?</strong> A member of staff will bring it to you.</p>
+      <p class="rent-seated rent-seated--on-ink guest-only" data-i18n="activeSeated"><strong>Seated at a table?</strong> A member of staff will bring it to you.</p>
       <!-- What returning it now would cost, worked out on the phone with the same rule the server bills by. -->
       <div class="rent-meter" hidden>
         <p class="rent-meter__now"><span data-text="soFar">&nbsp;</span> <small data-i18n="soFarLabel">so far</small></p>
         <p class="rent-meter__next" data-text="meterNext"></p>
       </div>
-      <p class="muted" data-i18n="activeRules">Return it to the machine within <strong data-text="cutoffLabel"></strong>, by <strong data-text="deadline"></strong>. Each further started hour is <strong data-money="pricePerHourPence"></strong> up to <strong data-money="maxRentPence"></strong> in total, and we take any extra from your saved card when you return it. After the cut-off a <strong data-money="nonReturnFeePence"></strong> fee applies.</p>
+      <p class="muted staff-only" data-i18n="staffActiveRules">It's free, so nothing is charged. Please put it back in the machine before you leave, so the next person can use it.</p>
+      <p class="muted guest-only" data-i18n="activeRules">Return it to the machine within <strong data-text="cutoffLabel"></strong>, by <strong data-text="deadline"></strong>. Each further started hour is <strong data-money="pricePerHourPence"></strong> up to <strong data-money="maxRentPence"></strong> in total, and we take any extra from your saved card when you return it. After the cut-off a <strong data-money="nonReturnFeePence"></strong> fee applies.</p>
       <p class="muted" data-i18n="activeClose">You can close this page. Scan the machine's code again at any time to see this page.</p>
-      <form class="rent-receipt" novalidate>
+      <form class="rent-receipt guest-only" novalidate>
         <label class="rent-receipt__label" data-i18n="receiptLabel">Want a receipt? Add your email and we'll send it. Optional.</label>
         <div class="rent-receipt__row">
           <input type="email" name="receipt_email" autocomplete="email" inputmode="email" maxlength="160" aria-label="Email for your receipt">
@@ -149,8 +164,9 @@
     <div class="wl-panel" data-state="returned" hidden tabindex="-1">
       <span class="label" data-i18n="returnedLabel">Returned</span>
       <h2 data-i18n="returnedTitle">Thanks, you're all done.</h2>
-      <p data-i18n="returnedText">Your total for this rental is <strong data-text="total"></strong>.</p>
-      <form class="rent-receipt" novalidate>
+      <p class="guest-only" data-i18n="returnedText">Your total for this rental is <strong data-text="total"></strong>.</p>
+      <p class="staff-only" data-i18n="staffReturned">Thanks for putting it back. Nothing was charged.</p>
+      <form class="rent-receipt guest-only" novalidate>
         <label class="rent-receipt__label" data-i18n="receiptLabel">Want a receipt? Add your email and we'll send it. Optional.</label>
         <div class="rent-receipt__row">
           <input type="email" name="receipt_email" autocomplete="email" inputmode="email" maxlength="160" aria-label="Email for your receipt">

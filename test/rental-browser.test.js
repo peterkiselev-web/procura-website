@@ -16,7 +16,7 @@ const BASE = `http://localhost:${PORT}`;
 const ENV = {
   ...process.env, PORT: String(PORT), STRIPE_FAKE: "yes", STRIPE_SECRET_KEY: "rk_test_fake", STRIPE_PUBLISHABLE_KEY: "pk_test_fake",
   STRIPE_WEBHOOK_SECRET: "whsec_test_fake", STATIONS: "AJ1=DTA59552", SITE_URL: BASE, SUPPLIER_MODE: "fake", RENTAL_STORE: "memory",
-  ADMIN_PASSWORD: "local-test-password", RENTAL_POLL_INTERVAL_SECONDS: "10", DEV_JOBS_EVERY_MS: "60000", RENTAL_RELEASE_TIMEOUT_SECONDS: "10",
+  ADMIN_PASSWORD: "local-test-password", STAFF_CODES: "Sara:SARA-7QK4-92ZD", RENTAL_POLL_INTERVAL_SECONDS: "10", DEV_JOBS_EVERY_MS: "60000", RENTAL_RELEASE_TIMEOUT_SECONDS: "10",
 };
 for (const k of ["CONTEXT", "NETLIFY", "AWS_LAMBDA_FUNCTION_NAME", "LAMBDA_TASK_ROOT"]) delete ENV[k];
 
@@ -88,8 +88,8 @@ test("the rent page works end to end in a browser", { skip: !chromium && "Playwr
     await page.waitForSelector("#rent-form:not([hidden])");
     await page.fill('[data-test="card"]', "4000 0000 0000 9995");
     await page.click("#pay-button");
-    await page.waitForSelector(".form-status.is-error");
-    assert.match(await page.locator(".form-status").innerText(), /declined/i);
+    await page.waitForSelector("#rent-form .form-status.is-error");
+    assert.match(await page.locator("#rent-form .form-status").innerText(), /declined/i);
     assert.equal((await rentals()).filter((r) => r.status === "created").length, 1, "one unpaid rental");
     assert.equal((await rentals()).filter((r) => r.trade_no).length, 0, "nothing released for a declined card");
 
@@ -176,6 +176,68 @@ test("the rent page works end to end in a browser", { skip: !chromium && "Playwr
     assert.match(await page.locator('[data-state="active"]').innerText(), /Take your power bank/);
     assert.deepEqual(errors, []);
     await post(`/__dev/supplier/return?tradeNo=${mine.trade_no}&minutes=5`);
+  });
+
+  await t.test("staff: a personal link fills in the code, a wrong code is refused, the right one releases a power bank for free", async () => {
+    const { page, errors } = await newPage();
+    // The personal link carries the code after #. It only fills the box, and leaves the address bar.
+    await page.goto(`${BASE}/rent?station=AJ1#staff=sara-7qk4-92zd`);
+    await page.waitForSelector('[data-state="staff"]:not([hidden])');
+    assert.equal(await page.locator("#staff-code").inputValue(), "sara-7qk4-92zd");
+    assert.ok(!page.url().includes("staff="), "the code is taken out of the address bar");
+    const before = (await rentals()).length;
+    assert.equal(before, (await rentals()).length, "opening the link released nothing");
+
+    await page.fill("#staff-code", "WRONG-1234");
+    await page.click("#staff-button");
+    await page.waitForSelector("#staff-form .form-status.is-error");
+    assert.match(await page.locator("#staff-form .form-status").innerText(), /isn't right/);
+    assert.equal((await rentals()).length, before, "a wrong code creates nothing");
+
+    await page.fill("#staff-code", "SARA 7QK4 92ZD");
+    await page.click("#staff-button");
+    await page.waitForSelector('[data-state="active"]:not([hidden])', { timeout: 20000 });
+    const active = await page.locator('[data-state="active"]').innerText();
+    assert.match(active, /Take your power bank/);
+    assert.match(active, /It's free, so nothing is charged/);
+    assert.doesNotMatch(active, /saved card|non-return fee|receipt/i, "no money wording for staff");
+    assert.doesNotMatch(active, /Seated at a table/, "staff are not told staff will bring it");
+    assert.equal(await page.locator(".rent-meter").isHidden(), true, "no running total");
+    const mine = (await rentals())[0];
+    assert.equal(mine.staff_name, "Sara");
+    assert.equal(mine.paid_pence, 0);
+    assert.equal(mine.stripe_payment_intent_id, undefined, "no payment was made");
+
+    // A second power bank on the same code is refused while the first is out.
+    await page.goto(`${BASE}/rent?station=AJ1`);
+    await page.waitForSelector('[data-state="active"]:not([hidden])', { timeout: 10000 });
+    const other = await newPage();
+    await other.page.goto(`${BASE}/rent?station=AJ1`);
+    await other.page.waitForSelector("#rent-form:not([hidden])");
+    await other.page.click('[data-action="staff"]');
+    await other.page.fill("#staff-code", "SARA7QK492ZD");
+    await other.page.click("#staff-button");
+    await other.page.waitForSelector("#staff-form .form-status.is-error");
+    assert.match(await other.page.locator("#staff-form .form-status").innerText(), /already have a power bank out/);
+
+    // Returned after 5 hours: settled at nothing.
+    await post(`/__dev/supplier/return?tradeNo=${mine.trade_no}&minutes=300`);
+    let done;
+    for (let i = 0; i < 15; i++) {
+      await get("/__dev/jobs");
+      done = (await rentals()).find((r) => r.id === mine.id);
+      if (done.status === "settled") break;
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+    assert.equal(done.status, "settled");
+    assert.equal(done.charged_extra_pence, 0);
+    await page.goto(`${BASE}/rent?station=AJ1`);
+    await page.waitForSelector('[data-state="returned"]:not([hidden])', { timeout: 10000 });
+    const returned = await page.locator('[data-state="returned"]').innerText();
+    assert.match(returned, /Nothing was charged/);
+    assert.doesNotMatch(returned, /total/i);
+    assert.deepEqual(errors, []);
+    assert.deepEqual(other.errors, []);
   });
 
   await t.test("if the machine never releases, the customer sees the automatic refund", async () => {

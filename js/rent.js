@@ -2,6 +2,7 @@
    on Android, card), then follows the rental until the power bank is out, and shows what happens after.
    Nothing secret lives here: prices, wording and the Stripe publishable key all come from /api/rent/station.
    A power bank is only ever released by the server after Stripe confirms payment, never because of anything in this page.
+   The one exception is the venue's staff: the server checks a personal staff code and its limits, then releases one for free.
    English and Arabic: the switch at the top, the phone's language, or the station's setting picks one. */
 (function () {
   "use strict";
@@ -21,6 +22,14 @@
   var head = document.getElementById("rent-head");
   var station_ = null, stripe = null, elements = null, current = null, lastRental = null, pollTimer = null, waitStarted = 0, stripeReady = false;
   var lastFill = {}, lastView = null;
+  // A staff member's personal link can carry their code after #staff= (the part after # is never sent to any server).
+  // It only fills in the box: a power bank comes out only when they tap the button, at the machine.
+  var staffPrefill = (function () {
+    var m = /(?:^#|&)staff=([^&]+)/.exec(location.hash || "");
+    if (!m) return null;
+    try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { /* ignore */ }
+    try { return decodeURIComponent(m[1]).slice(0, 80); } catch (e) { return null; }
+  })();
   var isLocal = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 
   // Start fetching Stripe.js straight away, alongside everything else, so the payment form appears sooner.
@@ -83,6 +92,15 @@
     closedLabel: "انتهى",
     closedTitle: "انتهى هذا الإيجار.",
     rentOne: "استأجر باور بانك",
+    staffOpen: "تعمل هنا؟ استخدم رمز الموظف",
+    staffLabel: "الموظفون",
+    staffTitle: "باور بانك مجاني، مع شكرنا",
+    staffText: "شكراً لاهتمامك بضيوفنا. قف عند الجهاز وأدخل رمز الموظف الخاص بك، وسيخرج باور بانك. إنه مجاني ولا حاجة إلى بطاقة. يرجى إعادته إلى الجهاز قبل مغادرتك.",
+    staffCodeLabel: "رمز الموظف الخاص بك",
+    staffButton: "احصل على باور بانك مجاني",
+    staffBack: "العودة إلى الدفع",
+    staffActiveRules: "إنه مجاني، لذلك لن يتم خصم أي مبلغ. يرجى إعادته إلى الجهاز قبل مغادرتك ليتمكن الشخص التالي من استخدامه.",
+    staffReturned: "شكراً لإعادته. لم يتم خصم أي مبلغ.",
     foot: "تديرها شركة JUKIE Experiences Ltd باسم Procura. <a href=\"/rental-terms\" target=\"_blank\" rel=\"noopener\">شروط الإيجار</a> و<a href=\"/privacy\" target=\"_blank\" rel=\"noopener\">إشعار الخصوصية</a> (بالإنجليزية).",
   };
   // Messages the script writes itself: [English, Arabic].
@@ -104,6 +122,15 @@
     receiptBad: ["That email address doesn't look right.", "عنوان البريد الإلكتروني غير صحيح."],
     receiptFailed: ["We couldn't send it just now. Please try again.", "تعذّر الإرسال الآن. يرجى المحاولة مرة أخرى."],
     meterNext: ["In use {t} · next {p} from {time}", "قيد الاستخدام منذ {t} · المبلغ التالي {p} ابتداءً من {time}"],
+    staffLabel: ["Staff", "الموظفون"],
+    staffBusy: ["Checking your code...", "جارٍ التحقق من الرمز..."],
+    staffEmpty: ["Please enter your staff code.", "يرجى إدخال رمز الموظف."],
+    staffBadCode: ["That code isn't right. Please check it with your manager.", "هذا الرمز غير صحيح. يرجى التحقق منه مع مديرك."],
+    staffHasOne: ["You already have a power bank out. Please put it back in the machine first.", "لديك باور بانك بالفعل. يرجى إعادته إلى الجهاز أولاً."],
+    staffLimit: ["The staff power banks are all out right now, so that there are enough for guests. Please try again later.", "جميع الباور بانك المخصصة للموظفين مستخدمة الآن، حتى يبقى ما يكفي للضيوف. يرجى المحاولة لاحقاً."],
+    staffDailyPerson: ["You've had your free power bank for today. Thank you! You can still rent one as normal.", "لقد حصلت على الباور بانك المجاني لهذا اليوم. شكراً لك! يمكنك استئجار واحد بالطريقة المعتادة."],
+    staffDailyMachine: ["Today's free staff power banks have all been used. You can still rent one as normal.", "تم استخدام جميع الباور بانك المجانية للموظفين لهذا اليوم. يمكنك استئجار واحد بالطريقة المعتادة."],
+    staffWaitLong: ["This is taking longer than usual. Please keep this page open.", "يستغرق الأمر وقتاً أطول من المعتاد. يرجى إبقاء هذه الصفحة مفتوحة."],
     meterCapped: ["In use {t} · rent has reached the {max} maximum", "قيد الاستخدام منذ {t} · بلغ الإيجار الحد الأقصى {max}"],
   };
   var LANG = "en";
@@ -243,7 +270,7 @@
     var box = $(".rent-meter", panels.active);
     if (!box) return;
     var start = Date.parse((v && v.releasedAt) || ""), per = Number(v && v.pricePerHourPence), max = Number(v && v.maxRentPence);
-    if (!v || v.state !== "active" || !start || !per || !max) { box.hidden = true; return; }
+    if (!v || v.state !== "active" || v.staff || !start || !per || !max) { box.hidden = true; return; } // staff pay nothing
     var elapsed = Math.max(0, Date.now() - start);
     var hours = Math.max(1, Math.ceil(elapsed / 3600000));
     var rent = Math.max(Math.min(max, hours * per), Number(v.paidPence) || 0);
@@ -265,16 +292,19 @@
 
   function render(v) {
     lastView = v;
+    root.classList.toggle("is-staff", !!v.staff);
     applyView(v);
     if (v.state === "awaiting_payment" || v.state === "releasing") {
       var long = Date.now() - waitStarted > 45000;
-      $("[data-waiting-label]", panels.waiting).textContent = msg(v.state === "awaiting_payment" ? "confirmingLabel" : "paidLabel");
+      $("[data-waiting-label]", panels.waiting).textContent = msg(v.staff ? "staffLabel" : v.state === "awaiting_payment" ? "confirmingLabel" : "paidLabel");
       $("[data-waiting-title]", panels.waiting).textContent = msg(v.state === "awaiting_payment" ? "confirmingTitle" : "releasingTitle");
-      $("[data-waiting-text]", panels.waiting).textContent = msg(long ? "waitLong" : "waitShort");
+      $("[data-waiting-text]", panels.waiting).textContent = msg(long ? (v.staff ? "staffWaitLong" : "waitLong") : "waitShort");
       show("waiting");
       pollTimer = setTimeout(poll, 2000);
       return;
     }
+    // A staff release that did not work: nothing was paid, so there is no refund to talk about.
+    if (v.staff && (v.state === "refunded" || v.state === "refunding")) { show("unavailable"); forget(); current = null; return; }
     if (v.state === "active") {
       show("active");
       pollTimer = setTimeout(poll, 20000); // slow check, in case the rental finishes while the page is open
@@ -305,6 +335,7 @@
       if (!hasSavedLang() && station_.station.lang && station_.station.lang !== LANG) setLang(station_.station.lang, false);
       $("[data-station-line]").textContent = station_.station.name;
       if (station_.available === false) { show("unavailable"); return; }
+      $("[data-staff-link]").hidden = !station_.staff;
       refill();
       var unavailable = false;
       // The machine check decides whether the form may stay.
@@ -316,6 +347,7 @@
       // The price and the form show now. The pay button waits (with a placeholder where Apple Pay goes) until
       // Stripe's form is ready, instead of the whole page waiting behind a loading message.
       if (!unavailable) show("form");
+      if (!unavailable && station_.staff && staffPrefill) { $("#staff-code").value = staffPrefill; staffPrefill = null; openStaff(); }
       return startStripe().then(function () { if (stripeReady) busy(false); }).catch(function () { show("error"); });
     }).catch(function () { show("error"); });
   }
@@ -433,9 +465,56 @@
     });
   });
 
+  // ---- staff: a free power bank with a personal code --------------------------------------------------------------
+  var staffForm = document.getElementById("staff-form");
+  var staffButton = document.getElementById("staff-button");
+  var staffStatus = $(".form-status", staffForm);
+  var staffInput = document.getElementById("staff-code");
+  function staffClear() { staffStatus.className = "form-status"; staffStatus.textContent = ""; }
+  function staffSay(text) { staffStatus.textContent = text; staffStatus.className = "form-status is-shown is-error"; }
+  function staffBusy(on) {
+    staffButton.disabled = on;
+    var t = $(".btn-text", staffButton);
+    if (on) t.textContent = msg("staffBusy"); else t.innerHTML = LANG === "ar" ? AR.staffButton : (t.getAttribute("data-en") || "Get my free power bank");
+  }
+  function openStaff() {
+    staffClear();
+    show("staff");
+    try { staffInput.focus({ preventScroll: true }); } catch (e) { /* older browsers */ }
+  }
+  $$('[data-action="staff"]', root).forEach(function (b) { b.addEventListener("click", openStaff); });
+  $$('[data-action="pay"]', root).forEach(function (b) { b.addEventListener("click", function () { show("form"); }); });
+  staffForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    staffClear();
+    var code = staffInput.value.trim();
+    if (!code) { staffSay(msg("staffEmpty")); staffInput.focus(); return; }
+    staffBusy(true);
+    api("/api/rent/staff", {
+      method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ station: station, code: code }),
+    }).then(function (res) {
+      staffBusy(false);
+      if (res.status === 200 && res.json.ok) {
+        var rec = { rentalId: res.json.rentalId, token: res.json.token };
+        save({ station: station, rentalId: rec.rentalId, token: rec.token });
+        staffInput.value = "";
+        waitStarted = Date.now();
+        render({ state: "releasing", staff: true });
+        stopPolling();
+        follow(rec);
+        return;
+      }
+      var err = res.json && res.json.error;
+      if (res.status === 409 && err === "unavailable") return show("unavailable");
+      if (res.status === 503) return show("soon");
+      staffSay(msg(err === "bad_code" ? "staffBadCode" : err === "staff_has_one" ? "staffHasOne" : err === "staff_limit" ? "staffLimit" : err === "staff_daily_person" ? "staffDailyPerson" : err === "staff_daily_machine" ? "staffDailyMachine" : res.status === 429 ? "tooMany" : "generic"));
+    }).catch(function () { staffBusy(false); staffSay(msg("generic")); });
+  });
+
   $$('[data-action="retry"]', root).forEach(function (b) { b.addEventListener("click", loadStation); });
   $$('[data-action="again"]', root).forEach(function (b) {
-    b.addEventListener("click", function () { forget(); current = null; lastView = null; history.replaceState(null, "", "/rent?station=" + encodeURIComponent(station)); loadStation(); });
+    b.addEventListener("click", function () { forget(); current = null; lastView = null; root.classList.toggle("is-staff", false); history.replaceState(null, "", "/rent?station=" + encodeURIComponent(station)); loadStation(); });
   });
   window.addEventListener("pageshow", function (ev) { if (ev.persisted && current) poll(); });
 

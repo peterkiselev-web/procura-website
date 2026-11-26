@@ -453,7 +453,7 @@ test("setup check: names what is missing without ever showing a value", async ()
   for (const secret of Object.values(env)) if (secret.length > 3) assert.ok(!out.body.includes(secret), "no value leaks");
   const h = setup();
   const ready = await rentApi(runtimeFor(h), { method: "GET", action: "health", ip: "h2" });
-  assert.deepEqual(JSON.parse(ready.body), { ok: true, ready: true, problems: [] });
+  assert.deepEqual(JSON.parse(ready.body), { ok: true, ready: true, problems: [], staff: { on: false, codes: 0, maxOutPerMachine: 2, dailyPerPerson: 1, dailyPerMachine: 2, problems: [] } });
 });
 
 test("setup check with a station: shows what the supplier said about the machine, without its device id", async () => {
@@ -545,4 +545,36 @@ test("an order reply laid out differently is reported with its field names", asy
   assert.equal(d.borrowTime, null);
   const html = renderAdmin({ attention: [], open: [{ id: "r1", created_at: new Date().toISOString(), station: "AJ1", status: "releasing", last_detail: d.detail, history: [], flags: [] }], failed: [], refunds: [], recent: [], stripeMode: "test" }, loadConfig({}));
   assert.match(html, /supplier order fields differ from the documentation: orderId, startTime/);
+});
+
+test("staff codes: loose typing matches, weak or broken entries are left out and reported without names or codes", () => {
+  const { parseStaffCodes, loadConfig, staffSummary } = require("../lib/rental/config");
+  const ok = parseStaffCodes("Sara:sara-7qk4-92zd, Omar: HX81 P2TC 9W");
+  assert.deepEqual(ok.codes, [{ name: "Sara", code: "SARA7QK492ZD" }, { name: "Omar", code: "HX81P2TC9W" }]);
+  assert.deepEqual(ok.problems, []);
+  const bad = parseStaffCodes("Sara:1234,Omar:PASSWORDONLY,:ABC12345,Leila:LEILA1234,leila:OTHER9876,Zed:LEILA1234");
+  assert.deepEqual(bad.codes, [{ name: "Leila", code: "LEILA1234" }]);
+  assert.equal(parseStaffCodes("Sara:EXAMPLE-7QK4-92ZD").codes.length, 0, "the example code from the README is refused");
+  assert.equal(bad.problems.length, 5);
+  for (const p of bad.problems) assert.ok(!/Sara|Omar|Leila|Zed|1234|PASSWORD/i.test(p), p);
+  // A bad staff setting never stops paying customers: the config still loads.
+  const cfg = loadConfig({ STAFF_CODES: "nonsense", STAFF_MAX_OUT: "lots" });
+  assert.equal(cfg.staff.maxOut, 2);
+  assert.equal(staffSummary(cfg).on, false);
+  assert.equal(staffSummary(cfg).problems.length, 2);
+});
+
+test("staff route: POST only, few tries per address, and the setup check shows only a count", async () => {
+  const h = setup({ STAFF_CODES: "Sara:SARA7QK492ZD" });
+  const rt = runtimeFor(h);
+  assert.equal((await rentApi(rt, { method: "GET", action: "staff" })).status, 405);
+  let last;
+  for (let i = 0; i < 11; i++) last = await rentApi(rt, { method: "POST", action: "staff", body: { station: "AJ1", code: "WRONG1234" }, ip: "7.7.7.7" });
+  assert.equal(last.status, 429, "the 11th try in 15 minutes is refused");
+  const good = await rentApi(rt, { method: "POST", action: "staff", body: { station: "AJ1", code: "SARA7QK492ZD" }, ip: "7.7.7.8" });
+  assert.equal(good.status, 200);
+  const health = await rentApi(rt, { method: "GET", action: "health", ip: "7.7.7.9" });
+  const j = JSON.parse(health.body);
+  assert.deepEqual(j.staff, { on: true, codes: 1, maxOutPerMachine: 2, dailyPerPerson: 1, dailyPerMachine: 2, problems: [] });
+  assert.ok(!/Sara|SARA7QK492ZD/.test(health.body));
 });
