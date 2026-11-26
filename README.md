@@ -67,7 +67,7 @@ With no ClickUp settings the server uses a fake venue: open `http://127.0.0.1:31
 
 A guest scans a QR code on a machine, which opens `/rent?station=AJ1`. They pay 3.00 GBP with Apple Pay, Google Pay or a card (Stripe). The server then asks the machine to release a power bank (Bajie Charging open API), watches for the return, and charges any extra from the saved card, capped. This follows `PROCURA_QR_RENTAL_BUILD_SPEC.pdf`, section by section.
 
-**Status: live, taking real payments since 16 Nov 2026.** On machine AJ1 (Al Jawhara Garden) a full rental has run end to end, first in Stripe test mode and then with real money: pay with Apple Pay, payment confirmed, power bank out about 13 seconds after paying, put back, return noticed within seconds, settled at 3.00 GBP. Everything is also tested against fakes of Stripe and of the supplier (`lib/rental/stripe-fake.js`, `lib/rental/supplier-fake.js`), in unit tests and in a real browser (`npm test`). Not yet seen for real: an extra-hour charge on return, the cut-off fee, a declined later charge, and a release the machine refuses (all covered by the automated tests). Nothing takes a payment until everything is set up: with any setting missing the page answers "not configured" and the admin page says what is missing.
+**Status: live, taking real payments since 16 Nov 2026.** On machine AJ1 (Al Jawhara Garden) a full rental has run end to end, first in Stripe test mode and then with real money: pay with Apple Pay, payment confirmed, power bank out about 13 seconds after paying, put back, return noticed within seconds, settled at 3.00 GBP. Everything is also tested against fakes of Stripe and of the supplier (`lib/rental/stripe-fake.js`, `lib/rental/supplier-fake.js`), in unit tests and in a real browser (`npm test`). Also seen for real since: extra time charged from the saved card on return (17, 18, 22 and 23 Nov), a later charge declined for insufficient funds and then paid on the automatic retry (17 Nov), and a payment whose webhook never came refunded automatically (16 Nov). Not yet seen for real: the cut-off fee and a release the machine refuses (both covered by the automated tests). Staff codes (below) are built and tested against the fakes, not yet used for real. Nothing takes a payment until everything is set up: with any setting missing the page answers "not configured" and the admin page says what is missing.
 
 ### Add a new machine (new location)
 
@@ -86,6 +86,27 @@ No code changes, nothing new in Stripe or Supabase. Each machine is one entry in
 6. **Print and place:** print the SVG at least 3 cm wide, scan it with a phone before printing many, and place it where people see it.
 7. **One real rental:** rent with Apple Pay, put it back, check the rental in the Supabase table `rentals` (or `/admin`), and refund yourself in Stripe if you like.
 8. **Brief the venue staff:** seated customers call staff, who take the power bank from the machine as it comes out; returns go in any empty slot, pushed until it clicks.
+
+### Free power banks for the venue's staff (staff codes)
+
+A thank you for the staff who hand power banks to seated guests. Each staff member gets a personal code. On the rent page a small link, **"Work here? Use your staff code"**, opens a box; with a right code the machine releases a power bank for free. No card, no Stripe, nothing ever charged, however long it is out. It is off (and the link is hidden) until `STAFF_CODES` is set.
+
+The rules, all on the server:
+- One power bank per code at a time (the database enforces it too: `supabase/migrations/0003_staff_rentals.sql`).
+- At most `STAFF_MAX_OUT` staff power banks out of one machine at once (default 2), so paying guests can always rent. Guests are never blocked by staff.
+- 10 code tries per 15 minutes from one address, and codes must be at least 8 letters and digits with both, so they cannot be guessed.
+- The machine is checked first, exactly as for a guest. If it does not release, the rental ends with nothing to refund.
+- A staff power bank not back by the usual cut-off (12 hours) is **not** charged and does not expire: it shows under "Needs attention" on `/admin` with the staff member's name. While it is out, that code cannot take another.
+
+Fastest path to switch it on:
+1. Supabase, SQL editor (project `qxjpbuomytximctqfhmd`): run `supabase/migrations/0003_staff_rentals.sql` once. Safe on the live database. (Claude can do this with the Supabase connection.)
+2. Make one code per person, for example `Sara:EXAMPLE-7QK4-92ZD,Omar:EXAMPLE-HX81-P2TC` (the server refuses any code with the word EXAMPLE in it, so make up your own). Name, colon, code; commas between people. Spaces, dashes and small letters are ignored when typed. Make codes up at random; never use birthdays or phone numbers.
+3. Netlify: https://app.netlify.com/projects/illustrious-praline-766938/configuration/env, add `STAFF_CODES` with that value (and `STAFF_MAX_OUT` only if 2 is wrong). Then **Trigger deploy, Deploy site**.
+4. Check: `https://procuracharge.com/api/rent/health` shows `"staff":{"on":true,"codes":2,...,"problems":[]}`. It never shows names or codes. A problem line says which entry (by number) is wrong.
+5. Give each person their own link, which fills the box in for them (it only fills it in; nothing comes out until they tap the button): `https://procuracharge.com/rent?station=AJ1#staff=SARAS-OWN-CODE`. Send it privately; it is their code.
+6. To stop someone's code, remove or change their entry in `STAFF_CODES` and deploy again. To turn the whole thing off, empty `STAFF_CODES` and deploy.
+
+Staff rentals show in `/admin` as "staff: Name" and "free (staff)", and in the Supabase table `rentals` with `staff_name` set and `paid_pence` 0.
 
 ### Start here in a new session
 

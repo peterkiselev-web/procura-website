@@ -27,7 +27,7 @@ Follow README "Add a new machine (new location)" exactly. In short: no code chan
 ## Rules that matter
 
 - Never put a key, password or secret in the repo or in chat. They live only in Netlify environment variables.
-- A power bank is released only after Stripe confirms the payment (webhook, or the server reading the rental's own PaymentIntent). Never from the phone's word. Never twice.
+- A power bank is released only after Stripe confirms the payment (webhook, or the server reading the rental's own PaymentIntent). Never from the phone's word. Never twice. The one owner-approved exception: staff codes (`STAFF_CODES`, README "Free power banks for the venue's staff"), checked on the server, one per code at a time, at most `STAFF_MAX_OUT` per machine, never charged.
 - Never bill beyond the caps (rent 20.00, fee 20.00, 40.00 in total).
 - Stripe requests pin `Stripe-Version: 2026-09-30.endive` and use `allowed_payment_method_types: ["card"]`. `payment_method_types` is refused by that version. Read the breaking changes before changing the version.
 - Stripe keys and the webhook must come from the same Stripe environment (ids of ours contain `K6YquxAygv`). Stripe "sandboxes" are separate accounts.

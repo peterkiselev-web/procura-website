@@ -620,5 +620,17 @@ html { overflow-x: clip; }
 .rent-take .label, .rent-take .muted { color: rgba(237,234,227,0.8); }
 .rent-take h2 { color: #fff; }
 .rent-foot { font-size: 14px; }
+/* Staff: a free power bank with a personal code */
+.rent-linkbtn { font: inherit; font-size: 15px; color: inherit; background: none; border: 0; min-height: 44px; padding: 8px 4px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.rent-staff-open { margin: 0; text-align: center; }
+.rent-staff-open[hidden] { display: none; }
+.rent-staff__label { font-size: 14px; font-weight: 600; }
+.rent-staff input { font: inherit; font-size: 18px; letter-spacing: 0.06em; text-transform: uppercase; width: 100%; min-width: 0; padding: 14px 16px; border-radius: 10px; border: 1px solid var(--line-light); background: #fff; color: var(--ink); }
+.rent-staff .btn { width: 100%; justify-content: center; min-height: 56px; }
+.rent-staff .btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+.rent-staff .form-status:empty { display: none; }
+.staff-only { display: none; }
+.is-staff .staff-only { display: block; }
+.is-staff .guest-only { display: none; }
 .rent-ar { font-size: 18px; line-height: 1.7; text-align: right; }
 .is-bone blockquote { margin: 16px 0; padding: 16px 20px; border-left: 3px solid var(--ink); background: rgba(10,10,10,0.05); border-radius: 0 12px 12px 0; }

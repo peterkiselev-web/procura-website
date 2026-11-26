@@ -756,3 +756,137 @@ test("a rental with no email at all works end to end (no receipt address is ever
   const charge = h.fakeStripe.state.calls.find((c) => c.params.off_session === "true");
   assert.equal(charge.params.receipt_email, undefined);
 });
+
+// ---- Staff: free power banks for the venue's staff, with personal codes (STAFF_CODES) --------------------------
+
+const STAFF = { STAFF_CODES: "Sara:SARA-7QK4-92ZD, Omar:HX81P2TC9W" };
+const stripeCalls = (h) => h.fakeStripe.state.calls.length;
+
+test("staff: no codes set means the option is off and not offered", async () => {
+  const h = setup();
+  assert.equal((await h.service.getStation("AJ1")).json.staff, false);
+  const out = await h.service.startStaffRental({ station: "AJ1", code: "SARA7QK492ZD" });
+  assert.equal(out.status, 404);
+  assert.equal(out.json.error, "staff_off");
+  assert.equal(createOrders(h).length, 0);
+});
+
+test("staff: a right code releases a power bank for free, with no card and nothing sent to Stripe, and the return settles at nothing", async () => {
+  const h = setup(STAFF);
+  const st = await h.service.getStation("AJ1");
+  assert.equal(st.json.staff, true);
+  assert.ok(!JSON.stringify(st.json).includes("Sara") && !JSON.stringify(st.json).includes("SARA"), "no name or code goes to the page");
+
+  const out = await h.service.startStaffRental({ station: "aj1", code: " sara 7qk4-92zd " }); // typed loosely: still matches
+  assert.equal(out.status, 200);
+  assert.equal(createOrders(h).length, 1, "the machine was asked once");
+  let row = await h.store.get(out.json.rentalId);
+  assert.equal(row.staff_name, "Sara");
+  assert.equal(row.paid_pence, 0);
+  assert.equal(row.stripe_customer_id, undefined);
+  assert.equal(row.stripe_payment_intent_id, undefined);
+  row = await h.service.refreshRelease(row);
+  assert.equal(row.status, S.ACTIVE);
+  const view = (await h.service.getStatus({ id: out.json.rentalId, token: out.json.token })).json;
+  assert.equal(view.state, "active");
+  assert.equal(view.staff, true);
+  assert.ok(!JSON.stringify(view).includes("Sara"), "the name is not sent to the page");
+
+  // Out for 5 hours: a guest would owe 15.00. Staff owe nothing.
+  h.advance(5 * HOUR);
+  h.supplier.simulateReturn(row.trade_no);
+  row = await h.service.pollActive(row);
+  assert.equal(row.status, S.SETTLED);
+  assert.equal(row.charged_extra_pence, 0);
+  assert.equal(row.due_pence, 0);
+  assert.equal(stripeCalls(h), 0, "Stripe was never called");
+  assert.equal(closes(h).length, 1, "the supplier order is closed");
+});
+
+test("staff: a wrong, empty or short code releases nothing", async () => {
+  const h = setup(STAFF);
+  for (const code of ["", "SARA", "SARA-7QK4-92ZE", "HX81P2TC9", "x".repeat(200), null]) {
+    const out = await h.service.startStaffRental({ station: "AJ1", code });
+    assert.equal(out.status, 403, String(code));
+    assert.equal(out.json.error, "bad_code");
+  }
+  assert.equal(createOrders(h).length, 0);
+  assert.equal((await h.store.list()).length, 0, "nothing recorded");
+  assert.ok(h.logs.some(([k, m]) => k === "staff" && /wrong staff code/.test(m) && !/SARA/.test(m)), "logged without the code");
+});
+
+test("staff: one power bank per code at a time, and a cap per machine so guests can always rent", async () => {
+  const h = setup({ ...STAFF, STAFF_MAX_OUT: "1" });
+  const first = await h.service.startStaffRental({ station: "AJ1", code: "SARA7QK492ZD" });
+  assert.equal(first.status, 200);
+  const again = await h.service.startStaffRental({ station: "AJ1", code: "SARA7QK492ZD" });
+  assert.equal(again.status, 409);
+  assert.equal(again.json.error, "staff_has_one");
+  const omar = await h.service.startStaffRental({ station: "AJ1", code: "HX81P2TC9W" });
+  assert.equal(omar.status, 409);
+  assert.equal(omar.json.error, "staff_limit", "only one staff power bank out of this machine");
+  assert.equal(createOrders(h).length, 1);
+  // Guests are not affected by the staff cap.
+  const guest = await h.rentUntilActive();
+  assert.equal(guest.row.status, S.ACTIVE);
+  // Once Sara's is back, Omar can have one.
+  let row = await h.service.refreshRelease(await h.store.get(first.json.rentalId));
+  h.supplier.simulateReturn(row.trade_no);
+  await h.service.pollActive(row);
+  assert.equal((await h.service.startStaffRental({ station: "AJ1", code: "HX81P2TC9W" })).status, 200);
+});
+
+test("staff: the database also stops a second open staff rental for the same name (two taps at once)", async () => {
+  const h = setup(STAFF);
+  const base = { created_at: new Date().toISOString(), station: "AJ1", device_id: "DTA59552", access_hash: "x", staff_name: "Sara", history: [], flags: [] };
+  await h.store.insert({ ...base, id: "00000000-0000-0000-0000-000000000001", status: S.ACTIVE });
+  await assert.rejects(h.store.insert({ ...base, id: "00000000-0000-0000-0000-000000000002", status: S.PAID }), (e) => e.code === "conflict");
+  await h.store.insert({ ...base, id: "00000000-0000-0000-0000-000000000003", status: S.SETTLED }); // a finished one is fine
+});
+
+test("staff: never expires and is never charged a fee; after the cut-off it is flagged on the admin page with the name", async () => {
+  const h = setup(STAFF);
+  const out = await h.service.startStaffRental({ station: "AJ1", code: "SARA7QK492ZD" });
+  let row = await h.service.refreshRelease(await h.store.get(out.json.rentalId));
+  h.advance(30 * HOUR); // well past the 12 hour cut-off
+  row = await h.service.pollActive(row);
+  assert.equal(row.status, S.ACTIVE, "still open, not expired");
+  const admin = await h.service.adminOverview();
+  const flagged = admin.attention.find((a) => a.rental.id === row.id);
+  assert.ok(flagged && /staff power bank not back/.test(flagged.why.join(" ")) && /Sara/.test(flagged.why.join(" ")));
+  // Back at last, 31 hours later: still free.
+  h.advance(HOUR);
+  h.supplier.simulateReturn(row.trade_no);
+  row = await h.service.pollActive(row);
+  assert.equal(row.status, S.SETTLED);
+  assert.equal(row.fee_pence, 0);
+  assert.equal(row.charged_extra_pence, 0);
+  assert.equal(stripeCalls(h), 0);
+});
+
+test("staff: if the machine does not release, it ends cleanly with no refund attempted (nothing was paid)", async () => {
+  const h = setup({ ...STAFF, RENTAL_RELEASE_TIMEOUT_SECONDS: "10" });
+  h.supplier.control.neverRelease = true;
+  const out = await h.service.startStaffRental({ station: "AJ1", code: "SARA7QK492ZD" });
+  h.advance(11000);
+  const row = await h.service.refreshRelease(await h.store.get(out.json.rentalId));
+  assert.equal(row.status, S.RELEASE_FAILED_REFUNDED);
+  assert.equal(row.refunded_pence, 0);
+  assert.equal(stripeCalls(h), 0, "no refund was sent to Stripe");
+  assert.equal(closes(h).length, 1, "the supplier order is closed");
+  assert.equal((await h.service.adminOverview()).refunds.length, 0, "not listed as a refund");
+  // And Sara can try again straight away.
+  h.supplier.control.neverRelease = false;
+  assert.equal((await h.service.startStaffRental({ station: "AJ1", code: "SARA7QK492ZD" })).status, 200);
+});
+
+test("staff: an offline machine or paused rentals release nothing", async () => {
+  const h = setup(STAFF);
+  h.supplier.setOnline("DTA59552", false);
+  assert.equal((await h.service.startStaffRental({ station: "AJ1", code: "SARA7QK492ZD" })).json.error, "unavailable");
+  h.supplier.setOnline("DTA59552", true);
+  const paused = setup({ ...STAFF, RENTALS_ENABLED: "no" });
+  assert.equal((await paused.service.startStaffRental({ station: "AJ1", code: "SARA7QK492ZD" })).json.error, "unavailable");
+  assert.equal((await h.service.startStaffRental({ station: "ZZ9", code: "SARA7QK492ZD" })).status, 404);
+  assert.equal(createOrders(h).length + createOrders(paused).length, 0);
+});
