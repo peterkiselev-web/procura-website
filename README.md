@@ -94,6 +94,8 @@ A thank you for the staff who hand power banks to seated guests. Each staff memb
 The rules, all on the server:
 - One power bank per code at a time (the database enforces it too: `supabase/migrations/0003_staff_rentals.sql`).
 - At most `STAFF_MAX_OUT` staff power banks out of one machine at once (default 2), so paying guests can always rent. Guests are never blocked by staff.
+- Daily limits, over any 24 hours: `STAFF_DAILY_PER_PERSON` per code (default 1) and `STAFF_DAILY_PER_MACHINE` for all staff together at one machine (default 2). A power bank that did not come out does not count. These cap what a shared or misused code can cost.
+- Personal codes, not one shared code: every staff rental carries a name, `/admin` shows "Free staff power banks" with a count per person for the last 30 days, and one person's code can be stopped without changing everyone's. Nothing can prove who ends up holding the power bank, so the limits and the names are the protection.
 - 10 code tries per 15 minutes from one address, and codes must be at least 8 letters and digits with both, so they cannot be guessed.
 - The machine is checked first, exactly as for a guest. If it does not release, the rental ends with nothing to refund.
 - A staff power bank not back by the usual cut-off (12 hours) is **not** charged and does not expire: it shows under "Needs attention" on `/admin` with the staff member's name. While it is out, that code cannot take another.
@@ -102,7 +104,7 @@ Fastest path to switch it on:
 1. Supabase, SQL editor (project `qxjpbuomytximctqfhmd`): run `supabase/migrations/0003_staff_rentals.sql` once. Safe on the live database. (Claude can do this with the Supabase connection.)
 2. Make one code per person, for example `Sara:EXAMPLE-7QK4-92ZD,Omar:EXAMPLE-HX81-P2TC` (the server refuses any code with the word EXAMPLE in it, so make up your own). Name, colon, code; commas between people. Spaces, dashes and small letters are ignored when typed. Make codes up at random; never use birthdays or phone numbers.
 3. Netlify: https://app.netlify.com/projects/illustrious-praline-766938/configuration/env, add `STAFF_CODES` with that value (and `STAFF_MAX_OUT` only if 2 is wrong). Then **Trigger deploy, Deploy site**.
-4. Check: `https://procuracharge.com/api/rent/health` shows `"staff":{"on":true,"codes":2,...,"problems":[]}`. It never shows names or codes. A problem line says which entry (by number) is wrong.
+4. Check: `https://procuracharge.com/api/rent/health` shows `"staff":{"on":true,"codes":2,...,"dailyPerPerson":1,"dailyPerMachine":2,"problems":[]}`. It never shows names or codes. A problem line says which entry (by number) is wrong.
 5. Give each person their own link, which fills the box in for them (it only fills it in; nothing comes out until they tap the button): `https://procuracharge.com/rent?station=AJ1#staff=SARAS-OWN-CODE`. Send it privately; it is their code.
 6. To stop someone's code, remove or change their entry in `STAFF_CODES` and deploy again. To turn the whole thing off, empty `STAFF_CODES` and deploy.
 

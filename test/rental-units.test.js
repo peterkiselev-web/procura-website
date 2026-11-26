@@ -453,7 +453,7 @@ test("setup check: names what is missing without ever showing a value", async ()
   for (const secret of Object.values(env)) if (secret.length > 3) assert.ok(!out.body.includes(secret), "no value leaks");
   const h = setup();
   const ready = await rentApi(runtimeFor(h), { method: "GET", action: "health", ip: "h2" });
-  assert.deepEqual(JSON.parse(ready.body), { ok: true, ready: true, problems: [], staff: { on: false, codes: 0, maxOutPerMachine: 2, problems: [] } });
+  assert.deepEqual(JSON.parse(ready.body), { ok: true, ready: true, problems: [], staff: { on: false, codes: 0, maxOutPerMachine: 2, dailyPerPerson: 1, dailyPerMachine: 2, problems: [] } });
 });
 
 test("setup check with a station: shows what the supplier said about the machine, without its device id", async () => {
@@ -575,6 +575,6 @@ test("staff route: POST only, few tries per address, and the setup check shows o
   assert.equal(good.status, 200);
   const health = await rentApi(rt, { method: "GET", action: "health", ip: "7.7.7.9" });
   const j = JSON.parse(health.body);
-  assert.deepEqual(j.staff, { on: true, codes: 1, maxOutPerMachine: 2, problems: [] });
+  assert.deepEqual(j.staff, { on: true, codes: 1, maxOutPerMachine: 2, dailyPerPerson: 1, dailyPerMachine: 2, problems: [] });
   assert.ok(!/Sara|SARA7QK492ZD/.test(health.body));
 });

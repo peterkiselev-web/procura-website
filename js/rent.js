@@ -128,6 +128,8 @@
     staffBadCode: ["That code isn't right. Please check it with your manager.", "هذا الرمز غير صحيح. يرجى التحقق منه مع مديرك."],
     staffHasOne: ["You already have a power bank out. Please put it back in the machine first.", "لديك باور بانك بالفعل. يرجى إعادته إلى الجهاز أولاً."],
     staffLimit: ["The staff power banks are all out right now, so that there are enough for guests. Please try again later.", "جميع الباور بانك المخصصة للموظفين مستخدمة الآن، حتى يبقى ما يكفي للضيوف. يرجى المحاولة لاحقاً."],
+    staffDailyPerson: ["You've had your free power bank for today. Thank you! You can still rent one as normal.", "لقد حصلت على الباور بانك المجاني لهذا اليوم. شكراً لك! يمكنك استئجار واحد بالطريقة المعتادة."],
+    staffDailyMachine: ["Today's free staff power banks have all been used. You can still rent one as normal.", "تم استخدام جميع الباور بانك المجانية للموظفين لهذا اليوم. يمكنك استئجار واحد بالطريقة المعتادة."],
     staffWaitLong: ["This is taking longer than usual. Please keep this page open.", "يستغرق الأمر وقتاً أطول من المعتاد. يرجى إبقاء هذه الصفحة مفتوحة."],
     meterCapped: ["In use {t} · rent has reached the {max} maximum", "قيد الاستخدام منذ {t} · بلغ الإيجار الحد الأقصى {max}"],
   };
@@ -506,7 +508,7 @@
       var err = res.json && res.json.error;
       if (res.status === 409 && err === "unavailable") return show("unavailable");
       if (res.status === 503) return show("soon");
-      staffSay(msg(err === "bad_code" ? "staffBadCode" : err === "staff_has_one" ? "staffHasOne" : err === "staff_limit" ? "staffLimit" : res.status === 429 ? "tooMany" : "generic"));
+      staffSay(msg(err === "bad_code" ? "staffBadCode" : err === "staff_has_one" ? "staffHasOne" : err === "staff_limit" ? "staffLimit" : err === "staff_daily_person" ? "staffDailyPerson" : err === "staff_daily_machine" ? "staffDailyMachine" : res.status === 429 ? "tooMany" : "generic"));
     }).catch(function () { staffBusy(false); staffSay(msg("generic")); });
   });
 

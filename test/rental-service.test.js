@@ -890,3 +890,49 @@ test("staff: an offline machine or paused rentals release nothing", async () => 
   assert.equal((await h.service.startStaffRental({ station: "ZZ9", code: "SARA7QK492ZD" })).status, 404);
   assert.equal(createOrders(h).length + createOrders(paused).length, 0);
 });
+
+// Takes a staff power bank and brings it back straight away.
+async function staffRoundTrip(h, code) {
+  const out = await h.service.startStaffRental({ station: "AJ1", code });
+  if (out.status !== 200) return out;
+  const row = await h.service.refreshRelease(await h.store.get(out.json.rentalId));
+  h.supplier.simulateReturn(row.trade_no);
+  await h.service.pollActive(row);
+  return out;
+}
+
+test("staff: one free power bank per person in any 24 hours, even when the first is back", async () => {
+  const h = setup(STAFF);
+  assert.equal((await staffRoundTrip(h, "SARA7QK492ZD")).status, 200);
+  h.advance(3 * HOUR);
+  const again = await h.service.startStaffRental({ station: "AJ1", code: "SARA7QK492ZD" });
+  assert.equal(again.status, 409);
+  assert.equal(again.json.error, "staff_daily_person");
+  h.advance(21 * HOUR + MIN); // just over 24 hours after the first
+  assert.equal((await staffRoundTrip(h, "SARA7QK492ZD")).status, 200);
+  assert.equal(createOrders(h).length, 2);
+});
+
+test("staff: all staff together get at most STAFF_DAILY_PER_MACHINE a day at one machine; guests are never blocked", async () => {
+  const h = setup({ STAFF_CODES: "Sara:SARA7QK492ZD,Omar:HX81P2TC9W,Leila:LEILA2468Q" });
+  assert.equal((await staffRoundTrip(h, "SARA7QK492ZD")).status, 200);
+  assert.equal((await staffRoundTrip(h, "HX81P2TC9W")).status, 200);
+  const third = await h.service.startStaffRental({ station: "AJ1", code: "LEILA2468Q" });
+  assert.equal(third.status, 409);
+  assert.equal(third.json.error, "staff_daily_machine");
+  assert.equal((await h.rentUntilActive()).row.status, S.ACTIVE, "a paying guest still rents");
+  // The admin page counts per person.
+  const counts = (await h.service.adminOverview()).staffCounts;
+  assert.deepEqual(counts.map((c) => [c.name, c.count]).sort(), [["Omar", 1], ["Sara", 1]]);
+});
+
+test("staff: a power bank that did not come out does not use up the day", async () => {
+  const h = setup({ ...STAFF, RENTAL_RELEASE_TIMEOUT_SECONDS: "10" });
+  h.supplier.control.neverRelease = true;
+  const out = await h.service.startStaffRental({ station: "AJ1", code: "SARA7QK492ZD" });
+  h.advance(11000);
+  await h.service.refreshRelease(await h.store.get(out.json.rentalId));
+  h.supplier.control.neverRelease = false;
+  assert.equal((await staffRoundTrip(h, "SARA7QK492ZD")).status, 200);
+  assert.deepEqual((await h.service.adminOverview()).staffCounts.map((c) => c.count), [1], "the failed one is not counted");
+});
